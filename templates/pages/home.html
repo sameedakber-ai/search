@@ -1,10 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    <p>Hello World!</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Home Page{% endblock %}
+
+{% block content %}
+    <nav class="p-6 bg-gray-900 text-white flex justify-between">
+        <div>
+            <h1 class="text-xl font-medium">Document Search</h1>
+        </div>
+        <div class="flex space-x-4">
+            <div>LOGIN</div>
+            <div>REGISTER</div>
+        </div>
+    </nav>
+
+    <main class="bg-gray-800 text-white h-screen">
+        <div class="grid grid-cols-4 h-full">
+            <div class="col-span-1 px-4 py-20 flex justify-center">
+                <div class="w-full">
+                    <h2 class="text-2xl font-medium mb-3">Your documents</h2>
+                    <small>Upload your text documents</small>
+                    <div class="bg-black p-4 mt-2 rounded-md">
+                        <p>Drag and drop directory</p>
+                        <p class="text-gray-400 text-xs">Limit 50 mb</p>
+                        <button class="p-2 text-sm rounded-md bg-gray-800 mt-4">Browse</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-span-3 px-8 py-20 bg-black flex justify-center">
+                <div class="w-3/4">
+                    <div class="flex space-x-2 items-center">
+                        <h1 class="text-4xl font-bold">Chat with multiple documents</h1>
+
+                    </div>
+                    <p class="mt-6">Ask a question about your documents:</p>
+                    <form action="" method="post">
+                        <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
+                            <input type="text" class="bg-transparent focus:outline-none w-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                                 class="w-6 h-6">
+                                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
+                            </svg>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}
