@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load unicorn %}
 
 {% block title %}Home Page{% endblock %}
 
@@ -33,15 +34,7 @@
 
                     </div>
                     <p class="mt-6">Ask a question about your documents:</p>
-                    <form action="" method="post">
-                        <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
-                            <input type="text" class="bg-transparent focus:outline-none w-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                 class="w-6 h-6">
-                                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
-                            </svg>
-                        </div>
-                    </form>
+                    {% unicorn "llm" %}
                 </div>
             </div>
         </div>
