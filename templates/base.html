@@ -1,11 +1,14 @@
 <!DOCTYPE html>
+{% load unicorn %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    {% unicorn_scripts %}
 </head>
 <body>
+{% csrf_token %}
 {% block content %}
 {% endblock %}
 </body>
