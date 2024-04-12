@@ -23,7 +23,12 @@
                     <div class="bg-black p-4 mt-2 rounded-md">
                         <p>Drag and drop directory</p>
                         <p class="text-gray-400 text-xs">Limit 50 mb</p>
-                        {% unicorn "uploadfiles" %}
+{#                        {% unicorn "uploadfiles" %}#}
+                        <form action="" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {{ form }}
+                            <button type="submit" class="bg-gray-700 text-sm p-3 rounded-md">Submit</button>
+                        </form>
                     </div>
                 </div>
             </div>
