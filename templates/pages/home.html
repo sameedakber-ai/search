@@ -23,10 +23,10 @@
                     <div class="bg-black p-4 mt-2 rounded-md">
                         <p>Drag and drop directory</p>
                         <p class="text-gray-400 text-xs">Limit 50 mb</p>
-{#                        {% unicorn "uploadfiles" %}#}
-                        <form action="" method="post" enctype="multipart/form-data">
+                        {#                        {% unicorn "uploadfiles" %}#}
+                        <form action="/" method="post" enctype="multipart/form-data" id="file-upload-form">
                             {% csrf_token %}
-                            <input type="file" name="directory" multiple>
+                            <input type="file" name="inpFile" id="inpFile">
                             <button type="submit" class="bg-gray-700 text-sm p-3 rounded-md">Submit</button>
                         </form>
                     </div>
@@ -44,4 +44,44 @@
             </div>
         </div>
     </main>
+{% endblock %}
+{% block scripts %}
+    <script>
+        const myForm = document.getElementById('file-upload-form');
+        const inpFile = document.getElementById('inpFile');
+
+        myForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', inpFile.files[0]);
+            console.log(formData);
+            fetch('/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+
+                });
+        });
+
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            console.log(cookieValue);
+            return cookieValue;
+        }
+    </script>
 {% endblock %}
