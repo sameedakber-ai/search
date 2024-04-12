@@ -26,7 +26,7 @@
 {#                        {% unicorn "uploadfiles" %}#}
                         <form action="" method="post" enctype="multipart/form-data">
                             {% csrf_token %}
-                            {{ form }}
+                            <input type="file" name="directory" multiple>
                             <button type="submit" class="bg-gray-700 text-sm p-3 rounded-md">Submit</button>
                         </form>
                     </div>
