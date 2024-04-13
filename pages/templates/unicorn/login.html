@@ -1,23 +1,23 @@
 <div>
     {% if not user.is_authenticated %}
-        <div x-data="{login_show: false, login_btn_show: true}" class="pe-8" @click.outside="login_btn_show=true, login_show=false">
-            <a x-show="login_btn_show" href="" x-on:click.prevent="login_show=!login_show, login_btn_show=!login_show" class="font-bold text-sm">LOGIN</a>
+        <div>
+            <a x-show="login_btn_show" href="" x-on:click.prevent="login_show=!login_show, login_btn_show=!login_show, register_btn_show=!login_show" class="font-bold text-sm">LOGIN</a>
             <div x-show="login_show">
                 <form action="" method="post" unicorn:submit.prevent="login">
-                    <input type="text" unicorn:model="username" class="bg-black rounded-lg text-white text-sm py-1 px-2"
+                    <input type="text" unicorn:model.defer="username" class="bg-black rounded-lg text-white text-sm py-1 px-2"
                            placeholder="username"/>
-                    <input type="password" unicorn:model="password" class="bg-black rounded-lg text-white text-sm py-1 px-2"
+                    <input type="password" unicorn:model.defer="password" class="bg-black rounded-lg text-white text-sm py-1 px-2"
                            placeholder="password"/>
                     <button type="submit" class="bg-gray-700 text-white text-xs rounded-md py-1 px-2">Login</button>
                 </form>
             </div>
         </div>
     {% else %}
-        <div class="pe-8 flex space-x-4">
-            <div>
+        <div class="flex space-x-6 items-center">
+            <div class="text-lg">
                 {{ user.username }}
             </div>
-            <a href="" unicorn:click.prevent="logout" class="block">Logout</a>
+            <a href="" unicorn:click.prevent="logout" class="block font-bold text-sm">LOGOUT</a>
 
         </div>
     {% endif %}
