@@ -8,10 +8,7 @@
         <div>
             <h1 class="text-xl font-medium">Document Search</h1>
         </div>
-        <div class="flex space-x-4">
-            <div>LOGIN</div>
-            <div>REGISTER</div>
-        </div>
+       {% unicorn "login" %}
     </nav>
 
     <main class="bg-gray-800 text-white min-h-screen">
@@ -115,7 +112,7 @@
                     li.className = "font-bold ps-" + p;
                     li.textContent = item;
                     ul.appendChild(li);
-                    getUlForDict(data, item, ul, p+4);
+                    getUlForDict(data, item, ul, p + 4);
                 } else {
                     const li = document.createElement('li');
                     li.className = "ps-" + p;
