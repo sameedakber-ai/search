@@ -26,7 +26,7 @@
                         {#                        {% unicorn "uploadfiles" %}#}
                         <form action="/" method="post" enctype="multipart/form-data" id="file-upload-form">
                             {% csrf_token %}
-                            <input type="file" name="inpFile" id="inpFile" multiple>
+                            <input type="file" name="inpFile" id="inpFile" multiple webkitdirectory="true" directory="true">
                             <button type="submit" class="bg-gray-700 text-sm p-3 rounded-md">Submit</button>
                         </form>
                     </div>
@@ -53,12 +53,12 @@
         myForm.addEventListener('submit', e => {
             e.preventDefault();
             const formData = new FormData();
-            {#const data = {'files': inpFile.files};#}
-            {#console.log(data);#}
 
             Array.from(inpFile.files).forEach(function(file, index){
-                console.log(file);
-                formData.append('file_' + index, file);
+                const newFilename = file.webkitRelativePath;
+                const modifiedPath = newFilename.replace(/\//g, '___');
+                const newFile = new File([file], modifiedPath, { type: file.type });
+                formData.append('file_' + index, newFile);
             });
             fetch('/', {
                 method: 'POST',
