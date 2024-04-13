@@ -11,6 +11,10 @@ def get_upload_path(instance, filename):
     file_path = 'directories/{}'.format(path)
     return file_path
 
+class DirectoryRoot(models.Model):
+    name = models.CharField(max_length=128)
+
 # Create your models here.
 class Directory(models.Model):
     directory = models.FileField(upload_to=get_upload_path)
+    root = models.ForeignKey(DirectoryRoot, on_delete=models.CASCADE)
