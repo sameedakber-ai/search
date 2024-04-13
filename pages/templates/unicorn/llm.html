@@ -1,13 +1,23 @@
 <div>
-    <form action="" method="post" unicorn:submit.prevent="add_to_llm_conversation">
+    <form action="" method="post" unicorn:submit.prevent="respond" class="mb-4">
         <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
             <input unicorn:model="question" type="text" class="bg-transparent focus:outline-none w-full">
             <button type="submit">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                 class="w-6 h-6">
-                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
-            </svg>
+                     class="w-6 h-6">
+                    <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
+                </svg>
             </button>
         </div>
     </form>
+    {% for question,answer in conversation %}
+        <div>
+            <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                {{ question }}
+            </div>
+            <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                {{ answer|safe }}
+            </div>
+        </div>
+    {% endfor %}
 </div>
