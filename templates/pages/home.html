@@ -22,36 +22,13 @@
 
     <main class="bg-gray-800 text-white min-h-screen">
         <div class="grid grid-cols-6 min-h-screen">
-            <div class="col-span-2 px-4 py-20 justify-center">
-                <div class="w-full">
-                    <h2 class="text-2xl font-medium mb-3">Your documents</h2>
-                    <small>Upload your text documents</small>
-                    <div class="bg-black p-4 mt-2 rounded-md">
-                        <p>Drag and drop directory</p>
-                        <p class="text-gray-400 text-xs">Limit 50 mb</p>
-                        <form x-data="{open: false}" action="/" method="post" enctype="multipart/form-data"
-                              id="file-upload-form" class="mt-4">
-                            {% csrf_token %}
-                            <input x-on:change="open = true" class="text-sm" type="file" name="inpFile" id="inpFile"
-                                   multiple webkitdirectory="true" directory="true">
-                            <button x-show="open" type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2">
-                                Upload
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <div class="mt-6">
-                    {% unicorn "process" %}
-                </div>
-                <div id="show-uploaded-directory" class="w-full mt-14 overflow-x-visible">
 
-                </div>
-            </div>
+            {% unicorn "documents" %}
+
             <div class="col-span-4 px-8 py-20 bg-black flex justify-center">
                 <div class="w-full">
                     <div class="flex space-x-2 items-center">
                         <h1 class="text-4xl font-bold">Chat with {documents}</h1>
-
                     </div>
                     <p class="mt-6">Ask a question about your documents:</p>
                     {% unicorn "llm" %}

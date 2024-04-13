@@ -25,9 +25,12 @@ HEADERS_TO_SPLIT_ON = [
 load_dotenv()
 
 
-class ProcessView(UnicornView):
-    dir_path=''
+class DocumentsView(UnicornView):
+    dir_path = ''
     directories = DirectoryRoot.objects.all()
+
+    def mount(self):
+        self.directories = DirectoryRoot.objects.all()
 
     def load_documents(self, dir_path):
         loader = DirectoryLoader(dir_path, glob="**/*.md", loader_cls=TextLoader, silent_errors=True)
@@ -42,3 +45,4 @@ class ProcessView(UnicornView):
     def create_db(self):
         documents = self.load_documents('media/directories/{}'.format(DirectoryRoot.objects.filter(id=1).get().name))
         vector_db = self.create_vector_db(documents, 'media/chroma')
+        self.directories = DirectoryRoot.objects.all()
