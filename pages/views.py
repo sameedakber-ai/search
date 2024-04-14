@@ -2,7 +2,7 @@ from django.shortcuts import render
 from pages.forms import DirectoryForm
 from collections import defaultdict
 from django.http import JsonResponse
-from pages.models import DirectoryRoot, Directory
+from pages.models import DirectoryRoot, Directory, EmbeddingDirectory
 # Create your views here.
 
 def home_page(request, *args, **kwargs):
@@ -18,5 +18,8 @@ def home_page(request, *args, **kwargs):
                     directory_structure[curr].append(next)
                 i += 1
             Directory.objects.create(directory=file, root=root)
+        root.structure = directory_structure
+        root.save()
+        embeddings_directory = EmbeddingDirectory.objects.create(name=root.name, directory=root)
         return JsonResponse({'directory': directory_structure})
     return render(request, "pages/home.html")

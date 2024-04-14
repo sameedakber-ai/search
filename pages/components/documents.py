@@ -38,7 +38,7 @@ class DocumentsView(UnicornView):
         self.directories = DirectoryRoot.objects.all()
         if self.directories:
             self.selected_directory = DirectoryRoot.objects.filter(id=1).get()
-            self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.name)
+            self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
 
     def load_documents(self, dir_path):
         loader = DirectoryLoader(dir_path, glob="**/*.md", loader_cls=TextLoader, silent_errors=True)
@@ -92,5 +92,5 @@ class DocumentsView(UnicornView):
         print(directory_id)
         self.selected_directory = DirectoryRoot.objects.filter(id=directory_id).get()
         print(self.selected_directory.name)
-        self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.name)
+        self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
         self.create_db()

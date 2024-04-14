@@ -13,8 +13,13 @@ def get_upload_path(instance, filename):
 
 class DirectoryRoot(models.Model):
     name = models.CharField(max_length=128)
+    structure = models.JSONField(null=True)
 
 # Create your models here.
 class Directory(models.Model):
     directory = models.FileField(upload_to=get_upload_path)
     root = models.ForeignKey(DirectoryRoot, on_delete=models.CASCADE)
+
+class EmbeddingDirectory(models.Model):
+    name = models.CharField(max_length=128)
+    directory = models.OneToOneField(DirectoryRoot, on_delete=models.CASCADE)
