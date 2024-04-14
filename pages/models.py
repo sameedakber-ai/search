@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import datetime
 
 # def content_file_name(instance, filename):
 #     name, ext = filename.split('.')
@@ -14,6 +15,7 @@ def get_upload_path(instance, filename):
 class DirectoryRoot(models.Model):
     name = models.CharField(max_length=128)
     structure = models.JSONField(null=True)
+    date = models.DateTimeField(default=datetime.now, blank=True)
 
 # Create your models here.
 class Directory(models.Model):
