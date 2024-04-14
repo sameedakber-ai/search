@@ -46,8 +46,8 @@
                                     data-directory="{{ directory.id }}">
                                 Expand
                             </button>
-                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md"
-                                    unicorn:click.prevent="update_chat_selection({{ directory.id }})">Chat
+                            <button class="{% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-sm py-1 px-2 rounded md"
+                                    unicorn:click.prevent="update_chat_selection({{ directory.id }})">{% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
                             </button>
                         </div>
                     </div>
@@ -63,13 +63,13 @@
                 <h1 class="text-4xl font-bold">{% if selected_directory %}Chatting with { {{ selected_directory.name }}
                     } {% else %}Chat with documents{% endif %}</h1>
             </div>
-            <p class="mt-6">{% if selected_directory %}Ask a question about your documents:{% else %}Upload documents to
+            <p class="mt-6">{% if selected_directory %}Ask a question about your documents:{% elif directories %}Select a directory from the list{% else %}Upload documents to
                 begin{% endif %}</p>
             <form action="" method="post" unicorn:submit.prevent="respond" class="mb-4">
                 <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
                     <input unicorn:model.defer="question" type="text" class="bg-transparent focus:outline-none w-full"
                            {% if not selected_directory %}disabled{% endif %}>
-                    <button type="submit">
+                    <button type="submit" {% if not selected_directory %}disabled{% endif %}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                              class="w-6 h-6">
                             <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>

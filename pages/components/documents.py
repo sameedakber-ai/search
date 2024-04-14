@@ -36,9 +36,9 @@ class DocumentsView(UnicornView):
 
     def mount(self):
         self.directories = DirectoryRoot.objects.order_by('-date')
-        if self.directories:
-            self.selected_directory = DirectoryRoot.objects.order_by("-date")[0]
-            self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
+        # if self.directories:
+        #     self.selected_directory = DirectoryRoot.objects.order_by("-date")[0]
+        #     self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
 
     def load_documents(self, dir_path):
         loader = DirectoryLoader(dir_path, glob="**/*.md", loader_cls=TextLoader, silent_errors=True)
@@ -92,6 +92,8 @@ class DocumentsView(UnicornView):
         self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
         self.create_db()
         self.directories = DirectoryRoot.objects.order_by('-date')
+        self.selected_directory.embeddingdirectory.processed = True
+        self.selected_directory.embeddingdirectory.save()
 
     def refreshDirectories(self):
         self.directories = DirectoryRoot.objects.order_by('-date')

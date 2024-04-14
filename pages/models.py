@@ -7,15 +7,17 @@ from datetime import datetime
 #          account_id=instance.account_id, user_id=instance.id, ext=ext)
 #     return file_path
 
-def get_upload_path(instance, filename):
-    path = filename.replace('___', '/')
-    file_path = 'directories/{}'.format(path)
-    return file_path
-
 class DirectoryRoot(models.Model):
     name = models.CharField(max_length=128)
     structure = models.JSONField(null=True)
     date = models.DateTimeField(default=datetime.now, blank=True)
+
+def get_upload_path(instance, filename):
+    root_name = DirectoryRoot.objects.order_by('-date')[0].name
+    path_excluding_root = "/".join(filename.split('___')[1:])
+    path = root_name + "/" + path_excluding_root
+    file_path = 'directories/{}'.format(path)
+    return file_path
 
 # Create your models here.
 class Directory(models.Model):
@@ -25,3 +27,5 @@ class Directory(models.Model):
 class EmbeddingDirectory(models.Model):
     name = models.CharField(max_length=128)
     directory = models.OneToOneField(DirectoryRoot, on_delete=models.CASCADE)
+    processed = models.BooleanField(default=False)
+
