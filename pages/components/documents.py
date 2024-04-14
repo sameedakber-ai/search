@@ -84,13 +84,11 @@ class DocumentsView(UnicornView):
         sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
         llm_response = self.get_llm_response(self.question, relevant_docs)
         formatted_response = f"Response: {llm_response}\nSources: {sources}"
-        print(formatted_response)
         self.answer = formatted_response
         self.conversation.append((self.question, self.answer))
 
     def update_chat_selection(self, directory_id):
         print(directory_id)
         self.selected_directory = DirectoryRoot.objects.filter(id=directory_id).get()
-        print(self.selected_directory.name)
         self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
         self.create_db()

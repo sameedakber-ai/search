@@ -30,6 +30,24 @@
         const myForm = document.getElementById('file-upload-form');
         const inpFile = document.getElementById('inpFile');
 
+        $('.expand-directory-btn').on('click', function (event) {
+            const directoryTree = $(this).closest(".directory").find('.show-uploaded-directory')[0];
+            if ($(directoryTree).hasClass('collapsed')) {
+                $(directoryTree).addClass('expanded').addClass('mt-4').removeClass('collapsed');
+                fetch('/fetch_directory_tree/?directory_id=' + $(this).data('directory'))
+                    .then(response => response.json())
+                    .then(data => {
+                        GetDirectoryTree(directoryTree, data['directory']);
+                    })
+                    .catch(error => {
+                        // Handle errors
+                        console.error('Error fetching data:', error);
+                    });
+            } else {
+                $(directoryTree).text('').addClass('collapsed').removeClass('expanded').removeClass('mt-4');
+            }
+        });
+
         myForm.addEventListener('submit', e => {
             e.preventDefault();
             const formData = new FormData();
@@ -49,8 +67,7 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    const directoryTree = document.getElementById('show-uploaded-directory');
-                    GetDirectoryTree(directoryTree, data['directory']);
+
                 });
         });
 

@@ -17,10 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from pages.views import home_page
+from pages.views import home_page, fetch_directory_tree
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home_page, name="home"),
     path("unicorn/", include("django_unicorn.urls")),
+    path('fetch_directory_tree/', fetch_directory_tree, name="fetch_directory_tree"),
 ]

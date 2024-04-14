@@ -22,8 +22,8 @@
 
         <div class="mt-12">
             {% for directory in directories %}
-                <div class="directory">
-                    <div class="bg-gray-900 text-lg flex justify-between rounded-md py-4 px-3 mb-3">
+                <div class="directory bg-gray-900 text-lg rounded-md py-4 px-3 mb-3">
+                    <div class="flex justify-between">
                         <div class="flex space-x-2 items-center">
                             <div>
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -38,21 +38,16 @@
                                 {{ directory.name }}
                             </div>
                         </div>
-                        <div class="flex space-x-2">
-                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md"
-                                    data-directory="{{ directory.id }}">Expand
+                        <div class="flex space-x-2" x-data="{ showExpand: true }" x-on:click=" showExpand = !showExpand ">
+                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md expand-directory-btn"
+                                    data-directory="{{ directory.id }}"><span x-text="showExpand ? 'Expand' : 'Collapse'"></span>
                             </button>
-                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md" unicorn:click="update_chat_selection({{ directory.id }})">Chat</button>
+                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md" unicorn:click.prevent="update_chat_selection({{ directory.id }})">Chat</button>
                         </div>
                     </div>
-                    <div class="w-full overflow-x-visible show-uploaded-directory">
-
-                    </div>
+                    <div class="overflow-x-visible show-uploaded-directory collapsed" data-directory="{{ directory.id }}"></div>
                 </div>
             {% endfor %}
-        </div>
-        <div id="show-uploaded-directory" class="w-full mt-14 overflow-x-visible">
-
         </div>
     </div>
     <div class="col-span-4 px-8 py-20 bg-black flex justify-center">
