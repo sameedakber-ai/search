@@ -33,6 +33,9 @@
         $('.expand-directory-btn').on('click', function (event) {
             const directoryTree = $(this).closest(".directory").find('.show-uploaded-directory')[0];
             if ($(directoryTree).hasClass('collapsed')) {
+                if ($(this).text('Expand')) {
+                    $(this).text('Collapse');
+                }
                 $(directoryTree).addClass('expanded').addClass('mt-4').removeClass('collapsed');
                 fetch('/fetch_directory_tree/?directory_id=' + $(this).data('directory'))
                     .then(response => response.json())
@@ -45,6 +48,9 @@
                     });
             } else {
                 $(directoryTree).text('').addClass('collapsed').removeClass('expanded').removeClass('mt-4');
+                if ($(this).text('Collapse')) {
+                    $(this).text('Expand');
+                }
             }
         });
 

@@ -28,7 +28,7 @@ load_dotenv()
 class DocumentsView(UnicornView):
     dir_path = ''
     directories = DirectoryRoot.objects.order_by('-date')
-    question = "How do I do this?"
+    question = ""
     conversation = []
     answer = ''
     selected_directory = ''
@@ -91,6 +91,7 @@ class DocumentsView(UnicornView):
         self.selected_directory = DirectoryRoot.objects.filter(id=directory_id).get()
         self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
         self.create_db()
+        self.directories = DirectoryRoot.objects.order_by('-date')
 
     def refreshDirectories(self):
         self.directories = DirectoryRoot.objects.order_by('-date')
