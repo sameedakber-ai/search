@@ -21,6 +21,7 @@ def home_page(request, *args, **kwargs):
         root.structure = directory_structure
         root.save()
         embeddings_directory = EmbeddingDirectory.objects.create(name=root.name, directory=root)
+        return JsonResponse({'message': 'success!'})
     return render(request, "pages/home.html")
 
 def fetch_directory_tree(request):

@@ -13,11 +13,14 @@
                     <input x-on:change="open = true" class="text-sm" type="file" name="inpFile" id="inpFile"
                            multiple webkitdirectory="true" directory="true">
                     <button x-show="open" x-on:click="show_process=true" type="submit"
-                            class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2"  unicorn:click="update_chat_selection({{ directory.id }}">
+                            class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2">
                         Upload
                     </button>
                 </form>
             </div>
+            <form action="" method="post" unicorn:submit.prevent="refreshDirectories">
+                <button type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2" id="process-new-directory" hidden></button>
+            </form>
         </div>
 
         <div class="mt-12">
@@ -38,14 +41,19 @@
                                 {{ directory.name }}
                             </div>
                         </div>
-                        <div class="flex space-x-2" x-data="{ showExpand: true }" x-on:click=" showExpand = !showExpand ">
+                        <div class="flex space-x-2" x-data="{ showExpand: true }"
+                             x-on:click=" showExpand = !showExpand ">
                             <button class="bg-gray-700 text-sm py-1 px-2 rounded md expand-directory-btn"
-                                    data-directory="{{ directory.id }}"><span x-text="showExpand ? 'Expand' : 'Collapse'"></span>
+                                    data-directory="{{ directory.id }}"><span
+                                    x-text="showExpand ? 'Expand' : 'Collapse'"></span>
                             </button>
-                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md" unicorn:click.prevent="update_chat_selection({{ directory.id }})">Chat</button>
+                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md"
+                                    unicorn:click="refreshDirectories()">Chat
+                            </button>
                         </div>
                     </div>
-                    <div class="overflow-x-visible show-uploaded-directory collapsed" data-directory="{{ directory.id }}"></div>
+                    <div class="overflow-x-visible show-uploaded-directory collapsed"
+                         data-directory="{{ directory.id }}"></div>
                 </div>
             {% endfor %}
         </div>
@@ -53,12 +61,13 @@
     <div class="col-span-4 px-8 py-20 bg-black flex justify-center">
         <div class="w-full">
             <div class="flex space-x-2 items-center">
-                <h1 class="text-4xl font-bold">Chatting with {% if selected_directory %} { {{ selected_directory.name }} } {% else %}documents{% endif %}</h1>
+                <h1 class="text-4xl font-bold">Chatting with {% if selected_directory %} { {{ selected_directory.name }}
+                    } {% else %}documents{% endif %}</h1>
             </div>
             <p class="mt-6">Ask a question about your documents:</p>
             <form action="" method="post" unicorn:submit.prevent="respond" class="mb-4">
                 <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
-                    <input unicorn:model="question" type="text" class="bg-transparent focus:outline-none w-full">
+                    <input unicorn:model="question" type="text" class="bg-transparent focus:outline-none w-full" {{ selected_directory : disabled }}>
                     <button type="submit">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                              class="w-6 h-6">

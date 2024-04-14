@@ -37,7 +37,7 @@ class DocumentsView(UnicornView):
     def mount(self):
         self.directories = DirectoryRoot.objects.order_by('-date')
         if self.directories:
-            self.selected_directory = DirectoryRoot.objects.filter(id=1).get()
+            self.selected_directory = DirectoryRoot.objects.order_by("-date")[0]
             self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
 
     def load_documents(self, dir_path):
@@ -88,7 +88,9 @@ class DocumentsView(UnicornView):
         self.conversation.append((self.question, self.answer))
 
     def update_chat_selection(self, directory_id):
-        print(directory_id)
         self.selected_directory = DirectoryRoot.objects.filter(id=directory_id).get()
         self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
         self.create_db()
+
+    def refreshDirectories(self):
+        self.directories = DirectoryRoot.objects.order_by('-date')
