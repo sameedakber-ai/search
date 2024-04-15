@@ -11,6 +11,7 @@ class DirectoryRoot(models.Model):
     name = models.CharField(max_length=128)
     structure = models.JSONField(null=True)
     date = models.DateTimeField(default=datetime.now, blank=True)
+    chat_history = models.JSONField(null=True, default={'chat_history': []})
 
 def get_upload_path(instance, filename):
     root_name = DirectoryRoot.objects.order_by('-date')[0].name
