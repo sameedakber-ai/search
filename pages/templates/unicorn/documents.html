@@ -47,7 +47,15 @@
                                 Expand
                             </button>
                             <button class="{% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-sm py-1 px-2 rounded md"
-                                    unicorn:click.prevent="update_chat_selection({{ directory.id }})">{% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                                    unicorn:click.prevent="update_chat_selection({{ directory.id }})">
+                                {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                            </button>
+                            <button class="text-md ps-4 rounded md" unicorn:click.prevent="delete({{ directory.id }})">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                     stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                                </svg>
+
                             </button>
                         </div>
                     </div>
@@ -63,7 +71,8 @@
                 <h1 class="text-4xl font-bold">{% if selected_directory %}Chatting with { {{ selected_directory.name }}
                     } {% else %}Chat with documents{% endif %}</h1>
             </div>
-            <p class="mt-6">{% if selected_directory %}Ask a question about your documents:{% elif directories %}Select a directory from the list{% else %}Upload documents to
+            <p class="mt-6">{% if selected_directory %}Ask a question about your documents:{% elif directories %}Select
+                a directory from the list{% else %}Upload documents to
                 begin{% endif %}</p>
             <form action="" method="post" unicorn:submit.prevent="respond" class="mb-4">
                 <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">

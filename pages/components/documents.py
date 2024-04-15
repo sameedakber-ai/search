@@ -115,3 +115,9 @@ class DocumentsView(UnicornView):
 
     def refreshDirectories(self):
         self.directories = DirectoryRoot.objects.order_by('-date')
+
+    def delete(self, directory_id):
+        DirectoryRoot.objects.get(id=directory_id).delete()
+        self.selected_directory = ''
+        self.selected_vector_db_path = ''
+        self.directories = DirectoryRoot.objects.order_by('-date')
