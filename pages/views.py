@@ -7,7 +7,10 @@ from pages.models import DirectoryRoot, Directory, EmbeddingDirectory
 
 def home_page(request, *args, **kwargs):
     if request.method == 'POST' and request.FILES:
-        root = DirectoryRoot.objects.create(name=make_name(request.FILES['file_0'].name.split('___')[0]))
+        root = DirectoryRoot.objects.create(
+            name=make_name(request.FILES['file_0'].name.split('___')[0]),
+            user=request.user
+        )
         directory_structure = defaultdict(list)
         for i in range(len(request.FILES)):
             file = request.FILES['file_{}'.format(i)]

@@ -47,7 +47,7 @@ class DocumentsView(UnicornView):
 
     def create_db(self):
         if not os.path.exists(self.selected_vector_db_path):
-            documents = self.load_documents('media/directories/{}'.format(self.selected_directory.name))
+            documents = self.load_documents('media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
             vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
         self.directories = DirectoryRoot.objects.all()
 
@@ -107,7 +107,7 @@ class DocumentsView(UnicornView):
 
     def update_chat_selection(self, directory_id):
         self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
-        self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embeddingdirectory.name)
+        self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id, self.selected_directory.embeddingdirectory.name)
         self.create_db()
         self.directories = DirectoryRoot.objects.order_by('-date')
         self.selected_directory.embeddingdirectory.processed = True

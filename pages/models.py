@@ -1,5 +1,7 @@
 from django.db import models
 from datetime import datetime
+from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session
 
 # def content_file_name(instance, filename):
 #     name, ext = filename.split('.')
@@ -12,12 +14,14 @@ class DirectoryRoot(models.Model):
     structure = models.JSONField(null=True)
     date = models.DateTimeField(default=datetime.now, blank=True)
     chat_history = models.JSONField(null=True, default={'chat_history': []})
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    session = models.ForeignKey(Session, on_delete=models.SET_NULL, blank=True, null=True)
 
 def get_upload_path(instance, filename):
     root_name = DirectoryRoot.objects.order_by('-date')[0].name
     path_excluding_root = "/".join(filename.split('___')[1:])
     path = root_name + "/" + path_excluding_root
-    file_path = 'directories/{}'.format(path)
+    file_path = '{0}/directories/{1}'.format(instance.root.user.id, path)
     return file_path
 
 # Create your models here.
