@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django_unicorn",
     'pages',
     'django_cleanup.apps.CleanupConfig',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -124,3 +125,19 @@ DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = "media"
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 1000
+
+AWS_ACCESS_KEY_ID = 'AKIAZI2LD53TVGLADD4P'
+AWS_SECRET_ACCESS_KEY = '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'
+
+AWS_STORAGE_BUCKET_NAME = 'sameedakber-ds-1'
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+AWS_S3_FILE_OVERWRITE = False
+
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "storages.backends.s3boto3.S3StaticStorage"
+#     },
+#     "staticfiles": {
+#         "BACKEND": "storages.backends.s3boto3.S3StaticStorage"
+#     }
+# }
