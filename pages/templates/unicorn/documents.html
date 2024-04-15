@@ -77,7 +77,7 @@
                     </button>
                 </div>
             </form>
-            {% for question,answer in conversation %}
+            {% for question,answer in selected_directory.chat_history.chat_history %}
                 <div>
                     <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
                         {{ question }}
