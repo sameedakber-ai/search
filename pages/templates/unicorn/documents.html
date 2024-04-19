@@ -1,5 +1,5 @@
-<div class="grid grid-cols-6 min-h-screen">
-    <div class="col-span-2 px-4 py-20 justify-center">
+<div class="grid grid-cols-8 min-h-screen">
+    <div class="col-span-3 px-4 py-20 justify-center">
 
         <div class="w-full">
             <h2 class="text-2xl font-medium mb-3">Your documents</h2>
@@ -12,7 +12,8 @@
                     {% csrf_token %}
                     <input x-on:change="open = true" class="text-sm" type="file" name="inpFile" id="inpFile"
                            multiple webkitdirectory="true" directory="true">
-                    <button type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2 flex space-x-2 items-center"
+                    <button type="submit"
+                            class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2 flex space-x-2 items-center"
                             id="upload-documents">
                         <div class="font-bold">
                             Upload
@@ -38,21 +39,24 @@
                             <div>
                                 {{ directory.name }}
                             </div>
-                            <div>
-                                <div class="mb-3" unicorn:loading unicorn:target="process-document-{{ directory.id }}">
-                                    {% include "components/loading.html" %}
-                                </div>
-                            </div>
                         </div>
                         <div class="flex space-x-2">
                             <button class="bg-gray-700 text-sm py-1 px-2 rounded md expand-directory-btn"
-                                    data-directory="{{ directory.id }}" id="expand-{{ directory.id }}" onclick="expand(this)">
+                                    data-directory="{{ directory.id }}" id="expand-{{ directory.id }}"
+                                    onclick="expand(this)">
                                 Expand
                             </button>
-                            <button class="{% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-sm py-1 px-2 rounded md"
+                            <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-sm py-1 px-2 rounded md"
                                     unicorn:click.prevent="update_chat_selection({{ directory.id }})"
                                     id="process-document-{{ directory.id }}">
-                                {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                                <div>
+                                    {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                                </div>
+                                {% if not directory.embeddingdirectory.processed %}
+                                    <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
+                                        {% include "components/loading.html" %}
+                                    </div>
+                                {% endif %}
                             </button>
                             <button class="text-md ps-4 rounded md" unicorn:click.prevent="delete({{ directory.id }})">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -69,7 +73,7 @@
             {% endfor %}
         </div>
     </div>
-    <div class="col-span-4 px-8 py-20 bg-black flex justify-center">
+    <div class="col-span-5 px-8 py-20 bg-black flex justify-center">
         <div class="w-full">
             <div class="flex space-x-2 items-center">
                 <h1 class="text-4xl font-bold">{% if selected_directory %}Chatting with { {{ selected_directory.name }}
