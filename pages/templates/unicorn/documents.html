@@ -1,157 +1,162 @@
 <div class="grid grid-cols-8 min-h-screen">
 
     {#  Document Management  #}
-    <div class="col-span-3 px-4 py-20 justify-center w-full">
+    <div class="col-span-3 px-4 py-20 justify-center">
+        <div class="w-full">
 
-        {#  Document Management Header  #}
-        <h2 class="text-2xl font-medium mb-3">Your documents</h2>
-        <small>Upload your text documents</small>
+            {#  Document Management Header  #}
+            <h2 class="text-2xl font-medium mb-3">Your documents</h2>
+            <small>Upload your text documents</small>
 
-        {#  Drag and Drop Container  #}
-        <div class="bg-black p-4 mt-1 rounded-md">
+            {#  Drag and Drop Container  #}
+            <div class="bg-black p-4 mt-1 rounded-md">
 
-            <p>Drag and drop directory</p>
-            <p class="text-gray-400 text-xs">Limit 50 mb</p>
+                <p>Drag and drop directory</p>
+                <p class="text-gray-400 text-xs">Limit 50 mb</p>
 
-            <form action="/" method="post" enctype="multipart/form-data"
-                  id="file-upload-form" class="mt-4">
-                {% csrf_token %}
+                <form action="/" method="post" enctype="multipart/form-data"
+                      id="file-upload-form" class="mt-4">
+                    {% csrf_token %}
 
-                <input class="text-sm" type="file" name="inpFile" id="inpFile"
-                       multiple webkitdirectory="true" directory="true">
+                    <input class="text-sm" type="file" name="inpFile" id="inpFile"
+                           multiple webkitdirectory="true" directory="true">
 
-                <button type="submit"
-                        class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2 flex space-x-2 items-center"
-                        id="upload-documents">
-                    <div class="font-bold">Upload</div>
-                    <div id="upload-spinner" class="hidden">{% include "components/loading.html" %}</div>
-                </button>
+                    <button type="submit"
+                            class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2 flex space-x-2 items-center"
+                            id="upload-documents">
+                        <div class="font-bold">Upload</div>
+                        <div id="upload-spinner" class="hidden">{% include "components/loading.html" %}</div>
+                    </button>
 
+                </form>
+
+            </div>
+
+
+            {#  Show Newly Uploaded Directory in Directory List  #}
+            <form action="" method="post" unicorn:submit.prevent="refreshDirectories">
+                <button type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2" id="process-new-directory"
+                        hidden></button>
             </form>
 
-        </div>
 
+            {#  Directory List  #}
+            <div class="mt-12" id="directory-list">
 
-        {#  Show Newly Uploaded Directory in Directory List  #}
-        <form action="" method="post" unicorn:submit.prevent="refreshDirectories">
-            <button type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2" id="process-new-directory"
-                    hidden></button>
-        </form>
+                {% for directory in directories %}
 
+                    <div class="directory bg-gray-900 text-lg rounded-md py-4 px-3 mb-3">
 
-        {#  Directory List  #}
-        <div class="mt-12" id="directory-list">
+                        <div class="flex justify-between">
 
-            {% for directory in directories %}
-
-                <div class="directory bg-gray-900 text-lg rounded-md py-4 px-3 mb-3">
-
-                    <div class="flex justify-between">
-
-                        <div class="flex space-x-2 items-center">
-                            {% include "components/folder.html" %}
-                            <div>
-                                {{ directory.name }}
-                            </div>
-                        </div>
-
-                        <div class="flex space-x-2">
-                            <button class="bg-gray-700 text-sm py-1 px-2 rounded md expand-directory-btn"
-                                    data-directory="{{ directory.id }}" id="expand-{{ directory.id }}"
-                                    onclick="expand(this)">
-                                Expand
-                            </button>
-
-                            <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-sm py-1 px-2 rounded md"
-                                    unicorn:click.prevent="update_chat_selection({{ directory.id }})"
-                                    id="process-document-{{ directory.id }}">
-
+                            <div class="flex space-x-2 items-center">
+                                {% include "components/folder.html" %}
                                 <div>
-                                    {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                                    {{ directory.name }}
                                 </div>
+                            </div>
 
-                                {% if not directory.embeddingdirectory.processed %}
-                                    <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
-                                        {% include "components/loading.html" %}
+                            <div class="flex space-x-2">
+                                <button class="bg-gray-700 text-sm py-1 px-2 rounded md expand-directory-btn"
+                                        data-directory="{{ directory.id }}" id="expand-{{ directory.id }}"
+                                        onclick="expand(this)">
+                                    Expand
+                                </button>
+
+                                <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-sm py-1 px-2 rounded md"
+                                        unicorn:click.prevent="update_chat_selection({{ directory.id }})"
+                                        id="process-document-{{ directory.id }}">
+
+                                    <div>
+                                        {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
                                     </div>
-                                {% endif %}
 
-                            </button>
+                                    {% if not directory.embeddingdirectory.processed %}
+                                        <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
+                                            {% include "components/loading.html" %}
+                                        </div>
+                                    {% endif %}
 
-                            <button class="text-md ps-4 rounded md" unicorn:click.prevent="delete({{ directory.id }})">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                     stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-                                </svg>
+                                </button>
 
-                            </button>
+                                <button class="text-md ps-4 rounded md"
+                                        unicorn:click.prevent="delete({{ directory.id }})">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                         stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                                    </svg>
 
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                        <div class="overflow-x-visible show-uploaded-directory collapsed"
+                             data-directory="{{ directory.id }}">
                         </div>
 
                     </div>
 
-                    <div class="overflow-x-visible show-uploaded-directory collapsed"
-                         data-directory="{{ directory.id }}">
-                    </div>
+                {% endfor %}
 
-                </div>
-
-            {% endfor %}
-
+            </div>
         </div>
 
     </div>
 
 
     {#  Document Chat  #}
-    <div class="col-span-5 px-8 py-20 bg-black flex justify-center w-full">
+    <div class="col-span-5 px-8 py-20 bg-black flex justify-center">
+        <div class="w-full">
 
-        {#  Document Chat Header  #}
-        <div class="flex space-x-2 items-center">
-            <h1 class="text-4xl font-bold">
-                {% if selected_directory %}Chatting with { {{ selected_directory.name }} } {% else %}Chat with
-                    documents{% endif %}
-            </h1>
+            {#  Document Chat Header  #}
+            <div class="flex space-x-2 items-center">
+                <h1 class="text-4xl font-bold">
+                    {% if selected_directory %}Chatting with { {{ selected_directory.name }} } {% else %}Chat with
+                        documents{% endif %}
+                </h1>
+            </div>
+
+            {#  Database State Specific message #}
+            <p class="mt-6">
+                {% if selected_directory %}Ask a question about your documents:{% elif directories %}Select
+                    a directory from the list{% else %}Upload documents to
+                    begin{% endif %}
+            </p>
+
+            {#  User Question upload  #}
+            <form action="" method="post" unicorn:submit.prevent="respond" class="mb-4">
+
+                <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
+
+                    <input unicorn:model.defer="question" type="text" class="bg-transparent focus:outline-none w-full"
+                           {% if not selected_directory %}disabled{% endif %}>
+
+                    <button type="submit" {% if not selected_directory %}disabled{% endif %}>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                             class="w-6 h-6">
+                            <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
+                        </svg>
+                    </button>
+
+                </div>
+
+            </form>
+
+            {#  Conversation History  #}
+            {% for question,answer in selected_directory.chat_history.chat_history %}
+                <div>
+                    <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                        {{ question }}
+                    </div>
+                    <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                        {{ answer|safe }}
+                    </div>
+                </div>
+            {% endfor %}
+
         </div>
-
-        {#  Database State Specific message #}
-        <p class="mt-6">
-            {% if selected_directory %}Ask a question about your documents:{% elif directories %}Select
-            a directory from the list{% else %}Upload documents to
-            begin{% endif %}
-        </p>
-
-        {#  User Question upload  #}
-        <form action="" method="post" unicorn:submit.prevent="respond" class="mb-4">
-
-            <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
-
-                <input unicorn:model.defer="question" type="text" class="bg-transparent focus:outline-none w-full"
-                       {% if not selected_directory %}disabled{% endif %}>
-
-                <button type="submit" {% if not selected_directory %}disabled{% endif %}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                         class="w-6 h-6">
-                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
-                    </svg>
-                </button>
-
-            </div>
-
-        </form>
-
-        {#  Conversation History  #}
-        {% for question,answer in selected_directory.chat_history.chat_history %}
-            <div>
-                <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
-                    {{ question }}
-                </div>
-                <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
-                    {{ answer|safe }}
-                </div>
-            </div>
-        {% endfor %}
-
     </div>
 </div>
 

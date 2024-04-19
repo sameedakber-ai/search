@@ -1,4 +1,5 @@
 import json
+import shutil
 
 from django_unicorn.components import UnicornView
 from pages.models import DirectoryRoot
@@ -117,7 +118,10 @@ class DocumentsView(UnicornView):
         self.directories = DirectoryRoot.objects.order_by('-date')
 
     def delete(self, directory_id):
+        dir_name = DirectoryRoot.objects.get(id=directory_id).name
         DirectoryRoot.objects.get(id=directory_id).delete()
+        shutil.rmtree('media/{}/chroma/{}'.format(self.request.user.id, dir_name))
+        shutil.rmtree('media/{}/directories/{}'.format(self.request.user.id, dir_name))
         self.selected_directory = ''
         self.selected_vector_db_path = ''
         self.directories = DirectoryRoot.objects.order_by('-date')
