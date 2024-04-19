@@ -17,12 +17,14 @@
     </nav>
     {% if not user.is_authenticated %}
         <nav class="p-1 bg-gray-700 text-white flex justify-center text-sm font-medium">
-            <div>Login/Register to view saved documents and results</div>
+            <div>Login/Register to start</div>
         </nav>
     {% endif %}
 
     <main class="bg-gray-800 text-white min-h-screen">
-        {% unicorn "documents" %}
+        {% if user.is_authenticated %}
+            {% unicorn "documents" %}
+        {% endif %}
     </main>
 {% endblock %}
 {% block scripts %}
@@ -30,14 +32,14 @@
         const myForm = document.getElementById('file-upload-form');
         const inpFile = document.getElementById('inpFile');
 
-        $('.expand-directory-btn').on('click', function (event) {
-            const directoryTree = $(this).closest(".directory").find('.show-uploaded-directory')[0];
+        function expand(element) {
+            const directoryTree = $(element).closest(".directory").find('.show-uploaded-directory')[0];
             if ($(directoryTree).hasClass('collapsed')) {
-                if ($(this).text('Expand')) {
-                    $(this).text('Collapse');
+                if ($(element).text('Expand')) {
+                    $(element).text('Collapse');
                 }
                 $(directoryTree).addClass('expanded').addClass('mt-4').removeClass('collapsed');
-                fetch('/fetch_directory_tree/?directory_id=' + $(this).data('directory'))
+                fetch('/fetch_directory_tree/?directory_id=' + $(element).data('directory'))
                     .then(response => response.json())
                     .then(data => {
                         GetDirectoryTree(directoryTree, data['directory']);
@@ -48,14 +50,16 @@
                     });
             } else {
                 $(directoryTree).text('').addClass('collapsed').removeClass('expanded').removeClass('mt-4');
-                if ($(this).text('Collapse')) {
-                    $(this).text('Expand');
+                if ($(element).text('Collapse')) {
+                    $(element).text('Expand');
                 }
             }
-        });
+        }
+
 
         myForm.addEventListener('submit', e => {
             e.preventDefault();
+            $(myForm).find('#upload-spinner').show();
             const formData = new FormData();
 
             Array.from(inpFile.files).forEach(function (file, index) {
@@ -74,6 +78,7 @@
                 .then(response => response.json())
                 .then(data => {
                     $('#process-new-directory').click();
+                    console.log($('.expand-directory-btn').length);
                 });
         });
 
