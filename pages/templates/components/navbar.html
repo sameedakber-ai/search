@@ -1,0 +1,16 @@
+{% load unicorn %}
+
+<nav class="p-6 bg-gray-900 text-white flex justify-between">
+
+    <div>
+        <h1 class="text-xl font-medium">Document Search</h1>
+    </div>
+
+    <div class="flex space-x-4"
+         x-data="{ login_show: false, login_btn_show: true, register_show: false, register_btn_show: true }"
+         @click.outside="register_btn_show=true, register_show=false, login_btn_show=true, login_show=false">
+        {% unicorn "login" %}
+        {% unicorn "register" %}
+    </div>
+
+</nav>
