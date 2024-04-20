@@ -50,7 +50,7 @@ class DocumentsView(UnicornView):
         if not os.path.exists(self.selected_vector_db_path):
             documents = self.load_documents('media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
             vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
-        self.directories = DirectoryRoot.objects.all()
+        # self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
 
     def get_conversation_chain(self, db):
         llm = ChatOpenAI()
@@ -102,7 +102,12 @@ class DocumentsView(UnicornView):
         sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
         history = self.selected_directory.chat_history['chat_history']
         llm_response = self.get_llm_response(query, relevant_docs, history)
-        formatted_response = f"Response: {llm_response}\nSources: {sources}"
+        formatted_response = f"{llm_response}<div class='mt-4'>"
+        for source in sources:
+            source = "/".join(source.split(f"\\")[3:])
+            print(source)
+            formatted_response += f'<p class="font-bold text-emerald-600 mb-2">{source}</p>'
+        formatted_response += '</div>'
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
 
