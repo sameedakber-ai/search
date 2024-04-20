@@ -7,8 +7,8 @@ from pages.models import DirectoryRoot
 import os
 from dotenv import load_dotenv
 
-
-from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, DirectoryLoader
+from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, DirectoryLoader, PyPDFLoader, \
+    CSVLoader, Docx2txtLoader
 from langchain_text_splitters import MarkdownHeaderTextSplitter, MarkdownTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -18,6 +18,13 @@ from langchain.chains import ConversationalRetrievalChain
 
 load_dotenv()
 
+loaders = {
+            '.pdf': PyPDFLoader,
+            '.md': TextLoader,
+            '.csv': CSVLoader,
+            '.txt': TextLoader,
+            '.docx': Docx2txtLoader
+        }
 
 class DocumentsView(UnicornView):
     dir_path = ''
@@ -26,13 +33,38 @@ class DocumentsView(UnicornView):
     selected_directory = ''
     selected_vector_db_path = ''
 
+    def create_directory_loader(self, file_type, directory_path):
+        return DirectoryLoader(
+            path=directory_path,
+            glob=f"**/*{file_type}",
+            loader_cls=loaders[file_type],
+            silent_errors=True
+        )
+
     def mount(self):
         self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
 
     def load_documents(self, dir_path):
-        loader = DirectoryLoader(dir_path, glob="**/*.md", loader_cls=TextLoader, silent_errors=True)
-        documents = loader.load()
-        return documents
+        pdf_loader = self.create_directory_loader('.pdf', dir_path)
+        md_loader = self.create_directory_loader('.md', dir_path)
+        txt_loader = self.create_directory_loader('.txt', dir_path)
+        docx_loader = self.create_directory_loader('.docx', dir_path)
+
+        # loader = DirectoryLoader(dir_path, glob="**/*", loader_cls=TextLoader, silent_errors=True)
+
+        all_documents = []
+
+        pdf_documents = pdf_loader.load()
+        md_documents = md_loader.load()
+        txt_documents = txt_loader.load()
+        docx_documents = docx_loader.load()
+
+        all_documents.extend(pdf_documents)
+        all_documents.extend(md_documents)
+        all_documents.extend(txt_documents)
+        all_documents.extend(docx_documents)
+
+        return all_documents
 
     def create_vector_db(self, documents, chroma_path):
         db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
@@ -48,7 +80,8 @@ class DocumentsView(UnicornView):
 
     def create_db(self):
         if not os.path.exists(self.selected_vector_db_path):
-            documents = self.load_documents('media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
+            documents = self.load_documents(
+                'media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
             vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
         # self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
 
@@ -71,7 +104,8 @@ class DocumentsView(UnicornView):
         {question}
         """
         prompt_template = ChatPromptTemplate.from_template(contextualize_q_system_prompt)
-        prompt = prompt_template.format(chat_history=self.selected_directory.chat_history['chat_history'], question=self.question)
+        prompt = prompt_template.format(chat_history=self.selected_directory.chat_history['chat_history'],
+                                        question=self.question)
         model = ChatOpenAI()
         response_text = model.predict(prompt)
         return response_text
@@ -113,7 +147,8 @@ class DocumentsView(UnicornView):
 
     def update_chat_selection(self, directory_id):
         self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
-        self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id, self.selected_directory.embeddingdirectory.name)
+        self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id,
+                                                                   self.selected_directory.embeddingdirectory.name)
         self.create_db()
         self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
         self.selected_directory.embeddingdirectory.processed = True

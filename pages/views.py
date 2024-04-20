@@ -5,6 +5,16 @@ from pages.forms import DirectoryForm
 from collections import defaultdict
 from django.http import JsonResponse
 from pages.models import DirectoryRoot, Directory, EmbeddingDirectory
+import pypdf
+import mammoth
+from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, DirectoryLoader, PyPDFLoader, \
+    CSVLoader, Docx2txtLoader, PyMuPDFLoader
+
+style_map = """
+p[style-name='Section Title'] => h1:fresh
+p[style-name='Subsection Title'] => h2:fresh
+u => em
+"""
 
 # Create your views here.
 
@@ -40,11 +50,21 @@ def fetch_directory_tree(request):
 def fetch_document(request):
     path = request.GET.get('source')
     path = "\\".join(path.split('___'))
+    extension = path.split('.')[-1]
+    print(extension)
     if os.path.exists(path):
-        with open(path, 'r') as f:
-            document = f.read()
-            return JsonResponse({'document': document})
-
+        loader = TextLoader(path)
+        if extension == 'txt' or extension == 'md':
+            loader = TextLoader(path)
+        elif extension == 'pdf':
+            loader = PyPDFLoader(path)
+        elif extension == 'docx':
+            loader = Docx2txtLoader(path)
+        else:
+            return JsonResponse({'document': '<p>UnSupported File Type</p>'})
+        document = loader.load()
+        return JsonResponse({'document': document[0].page_content})
+    return JsonResponse({'document': '<p>Document does not exist or is corrupted.<br> Please do a fresh directory upload</p>'})
 
 def make_name(name):
     used_names = [obj.name for obj in DirectoryRoot.objects.all()]
