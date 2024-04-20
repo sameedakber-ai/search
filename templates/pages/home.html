@@ -53,27 +53,30 @@
 
         myForm.addEventListener('submit', e => {
             e.preventDefault();
-            $(myForm).find('#upload-spinner').show();
-            const formData = new FormData();
+            if ($('#inpFile').val()) {
+                $(myForm).find('#upload-spinner').show();
+                const formData = new FormData();
 
-            Array.from(inpFile.files).forEach(function (file, index) {
-                const newFilename = file.webkitRelativePath;
-                const modifiedPath = newFilename.replace(/\//g, '___');
-                const newFile = new File([file], modifiedPath, {type: file.type});
-                formData.append('file_' + index, newFile);
-            });
-            fetch('/', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    $('#process-new-directory').click();
-                    console.log($('.expand-directory-btn').length);
+                Array.from(inpFile.files).forEach(function (file, index) {
+                    const newFilename = file.webkitRelativePath;
+                    const modifiedPath = newFilename.replace(/\//g, '___');
+                    const newFile = new File([file], modifiedPath, {type: file.type});
+                    formData.append('file_' + index, newFile);
                 });
+                fetch('/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        $('#process-new-directory').click();
+                        console.log($('.expand-directory-btn').length);
+                        $('#inpFile').val('');
+                    });
+            }
         });
 
         function getCookie(name) {
