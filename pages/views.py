@@ -1,8 +1,11 @@
+import os.path
+
 from django.shortcuts import render
 from pages.forms import DirectoryForm
 from collections import defaultdict
 from django.http import JsonResponse
 from pages.models import DirectoryRoot, Directory, EmbeddingDirectory
+
 # Create your views here.
 
 def home_page(request, *args, **kwargs):
@@ -27,20 +30,31 @@ def home_page(request, *args, **kwargs):
         return JsonResponse({'message': 'success!'})
     return render(request, "pages/home.html")
 
+
 def fetch_directory_tree(request):
     directory_id = request.GET.get('directory_id')
     print(directory_id)
     return JsonResponse({'directory': DirectoryRoot.objects.filter(id=directory_id).get().structure})
+
+
+def fetch_document(request):
+    path = request.GET.get('source')
+    path = "\\".join(path.split('___'))
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            document = f.read()
+            return JsonResponse({'document': document})
+
 
 def make_name(name):
     used_names = [obj.name for obj in DirectoryRoot.objects.all()]
     if name not in used_names:
         return name
     else:
-        suffix=1
-        name_is_used=True
+        suffix = 1
+        name_is_used = True
         new_name = name
-        while(name_is_used):
+        while (name_is_used):
             new_name = name + '_' + str(suffix)
             suffix += 1
             if new_name not in used_names:

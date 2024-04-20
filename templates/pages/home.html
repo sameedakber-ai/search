@@ -26,6 +26,19 @@
         const myForm = document.getElementById('file-upload-form');
         const inpFile = document.getElementById('inpFile');
 
+        function showDocument(source, event) {
+            event.preventDefault();
+            fetch('/fetch_document/?source=' + source)
+                .then(response => response.json())
+                .then(data => {
+                    $('#show-document').html(marked.parse(data['document']));
+                })
+                .catch(error => {
+                    // Handle errors
+                    console.error('Error fetching document:', error);
+                });
+        }
+
         function expand(element) {
             const directoryTree = $(element).closest(".directory").find('.show-uploaded-directory')[0];
             if ($(directoryTree).hasClass('collapsed')) {

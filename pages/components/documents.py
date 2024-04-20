@@ -98,15 +98,15 @@ class DocumentsView(UnicornView):
             self.selected_directory = DirectoryRoot.objects.filter(name=self.selected_directory['name']).first()
         query = self.get_recontextualized_question()
         print(query)
-        relevant_docs = self.get_k_relevant_documents(db, query, k=1)
+        relevant_docs = self.get_k_relevant_documents(db, query, k=2)
         sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
         history = self.selected_directory.chat_history['chat_history']
         llm_response = self.get_llm_response(query, relevant_docs, history)
         formatted_response = f"{llm_response}<div class='mt-4'>"
         for source in sources:
-            source = "/".join(source.split(f"\\")[3:])
-            print(source)
-            formatted_response += f'<p class="font-bold text-emerald-600 mb-2">{source}</p>'
+            modified_source = "/".join(source.split(f"\\")[3:])
+            request_source = "___".join(source.split(f"\\"))
+            formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event)">{modified_source}</a>'
         formatted_response += '</div>'
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
