@@ -21,13 +21,13 @@ load_dotenv()
 
 class DocumentsView(UnicornView):
     dir_path = ''
-    directories = DirectoryRoot.objects.order_by('-date')
+    directories = []
     question = ''
     selected_directory = ''
     selected_vector_db_path = ''
 
     def mount(self):
-        self.directories = DirectoryRoot.objects.order_by('-date')
+        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
 
     def load_documents(self, dir_path):
         loader = DirectoryLoader(dir_path, glob="**/*.md", loader_cls=TextLoader, silent_errors=True)
@@ -110,12 +110,12 @@ class DocumentsView(UnicornView):
         self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
         self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id, self.selected_directory.embeddingdirectory.name)
         self.create_db()
-        self.directories = DirectoryRoot.objects.order_by('-date')
+        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
         self.selected_directory.embeddingdirectory.processed = True
         self.selected_directory.embeddingdirectory.save()
 
     def refreshDirectories(self):
-        self.directories = DirectoryRoot.objects.order_by('-date')
+        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
 
     def delete(self, directory_id):
         dir_name = DirectoryRoot.objects.get(id=directory_id).name
@@ -124,4 +124,4 @@ class DocumentsView(UnicornView):
         shutil.rmtree('media/{}/directories/{}'.format(self.request.user.id, dir_name))
         self.selected_directory = ''
         self.selected_vector_db_path = ''
-        self.directories = DirectoryRoot.objects.order_by('-date')
+        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
