@@ -4,7 +4,8 @@
     <div class="col-span-1 px-4 justify-center h-[calc(100vh-75px)] overflow-y-auto">
         <div class="w-full pt-6">
 
-            <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1" onclick="requestFiles()">
+            <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1"
+                    onclick="requestFiles()">
                 <div class="flex items-center space-x-2">
                     <div class="rounded-full">
                         {% include "components/logo.html" %}
@@ -55,62 +56,32 @@
             {#  Directory List  #}
             <div class="mt-8" id="directory-list">
 
-                {% for directory in directories %}
-
-                    <div class="directory bg-gray-900 text-sm rounded-md py-4 px-3 mb-3">
-
-                        <div class="flex justify-between">
-
-                            <div class="flex space-x-2 items-center">
-                                {% include "components/folder.html" %}
-                                <div>
-                                    {{ directory.name }}
-                                </div>
-                            </div>
-
-                            <div class="flex space-x-1">
-                                <button class="bg-gray-700 text-xs py-1 px-2 rounded md expand-directory-btn"
-                                        data-directory="{{ directory.id }}" id="expand-{{ directory.id }}"
-                                        onclick="expand(this)">
-                                    Expand
-                                </button>
-
-                                <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
-                                        unicorn:click.prevent="update_chat_selection({{ directory.id }})"
-                                        id="process-document-{{ directory.id }}">
-
-                                    <div>
-                                        {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
-                                    </div>
-
-                                    {% if not directory.embeddingdirectory.processed %}
-                                        <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
-                                            {% include "components/loading.html" %}
-                                        </div>
-                                    {% endif %}
-
-                                </button>
-
-                                <button class="text-sm ps-1 rounded md"
-                                        unicorn:click.prevent="delete({{ directory.id }})">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                         stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
-                                    </svg>
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                        <div class="overflow-x-visible show-uploaded-directory collapsed"
-                             data-directory="{{ directory.id }}">
-                        </div>
-
+                {% if directories.today %}
+                    <div>
+                        <div class="font-light text-sm text-gray-400 mb-2">Today</div>
+                        {% for directory in directories.today %}
+                            {% include "components/directory.html" %}
+                        {% endfor %}
                     </div>
+                {% endif %}
 
-                {% endfor %}
+                {% if directories.yesterday %}
+                    <div class="mt-8">
+                        <div class="font-light text-sm text-gray-400 mb-2">Yesterday</div>
+                        {% for directory in directories.yesterday %}
+                            {% include "components/directory.html" %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% if directories.previous %}
+                    <div class="mt-8">
+                        <div class="font-light text-sm text-gray-400 mb-2">Previous</div>
+                        {% for directory in directories.previous %}
+                            {% include "components/directory.html" %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
             </div>
         </div>
@@ -119,7 +90,8 @@
 
 
     {#  Document Chat  #}
-    <div id="chat" class="col-span-3 px-8 bg-black flex justify-center h-[calc(100vh-75px)] overflow-y-auto {% if not selected_directory %}items-center{% endif %}">
+    <div id="chat"
+         class="col-span-3 px-8 bg-black flex justify-center h-[calc(100vh-75px)] overflow-y-auto {% if not selected_directory %}items-center{% endif %}">
         <div class="relative w-full text-center">
 
             {% if not selected_directory %}

@@ -15,6 +15,8 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
+from collections import defaultdict
+from django.contrib.humanize.templatetags.humanize import naturalday
 
 load_dotenv()
 
@@ -28,7 +30,7 @@ loaders = {
 
 class DocumentsView(UnicornView):
     dir_path = ''
-    directories = []
+    directories = {}
     question = ''
     selected_directory = ''
     selected_vector_db_path = ''
@@ -41,8 +43,18 @@ class DocumentsView(UnicornView):
             silent_errors=True
         )
 
+    def initialize_directory_data(self):
+        directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        sorted_directories = defaultdict(list)
+        sorted_directories['today'].extend([directory for directory in directories if naturalday(directory.date) == 'today'])
+        sorted_directories['yesterday'].extend([directory for directory in directories if naturalday(directory.date) == 'yesterday'])
+        sorted_directories['previous'].extend([directory for directory in directories if not (directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
+        self.directories = sorted_directories
+        print(self.directories)
+
+
     def mount(self):
-        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        self.initialize_directory_data()
 
     def load_documents(self, dir_path):
         pdf_loader = self.create_directory_loader('.pdf', dir_path)
@@ -151,13 +163,13 @@ class DocumentsView(UnicornView):
         self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id,
                                                                    self.selected_directory.embeddingdirectory.name)
         self.create_db()
-        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        self.initialize_directory_data()
         self.selected_directory.embeddingdirectory.processed = True
         self.selected_directory.embeddingdirectory.save()
         self.call("scrollToBottom")
 
     def refreshDirectories(self):
-        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        self.initialize_directory_data()
 
     def delete(self, directory_id):
         dir_name = DirectoryRoot.objects.get(id=directory_id).name
