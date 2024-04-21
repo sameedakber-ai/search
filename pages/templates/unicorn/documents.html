@@ -91,24 +91,35 @@
 
     {#  Document Chat  #}
     <div id="chat"
-         class="col-span-3 px-8 bg-black flex justify-center h-[calc(100vh-75px)] overflow-y-auto {% if not selected_directory %}items-center{% endif %}">
+         class="col-span-3 px-8 bg-black flex justify-center h-[calc(100vh-75px)] overflow-y-auto {% if not selected_directory.chat_history.chat_history %}items-center{% endif %}">
         <div class="relative w-full text-center">
 
             {% if not selected_directory %}
                 {#  Document Chat Header  #}
-                {% include "components/document-icon.html" %}
+                <div class="flex justify-center">
+                    {% include "components/logo-large.html" %}
+                </div>
                 <h1 class="text-3xl font-bold mt-4">
                     Chat with documents
                 </h1>
 
                 {#  Database State Specific message #}
                 <p class="mt-2">
-                    {% if directories %}Select a directory from the list{% else %}Upload directory to begin{% endif %}
+                    {% if directories %}Select a directory from the list{% else %}No directories found. Upload new directory to begin{% endif %}
                 </p>
             {% endif %}
 
             {#  Conversation History  #}
             {% if selected_directory %}
+                {% if not selected_directory.chat_history.chat_history %}
+                    <div class="flex justify-center">
+                        {% include "components/logo-large.html" %}
+                    </div>
+                    <h1 class="text-3xl font-bold mt-4">
+                        Chatting with { {{ selected_directory.name }} }
+                    </h1>
+                    <p class="mt-2">Start a new chat</p>
+                {% endif %}
                 <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-24 max-w-4xl">
                     {% for question,answer in selected_directory.chat_history.chat_history %}
                         <div>

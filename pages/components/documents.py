@@ -45,12 +45,13 @@ class DocumentsView(UnicornView):
 
     def initialize_directory_data(self):
         directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        if not directories:
+            return
         sorted_directories = defaultdict(list)
         sorted_directories['today'].extend([directory for directory in directories if naturalday(directory.date) == 'today'])
         sorted_directories['yesterday'].extend([directory for directory in directories if naturalday(directory.date) == 'yesterday'])
         sorted_directories['previous'].extend([directory for directory in directories if not (directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
         self.directories = sorted_directories
-        print(self.directories)
 
 
     def mount(self):
@@ -178,4 +179,4 @@ class DocumentsView(UnicornView):
         shutil.rmtree('media/{}/directories/{}'.format(self.request.user.id, dir_name))
         self.selected_directory = ''
         self.selected_vector_db_path = ''
-        self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        self.initialize_directory_data()
