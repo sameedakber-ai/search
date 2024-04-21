@@ -153,5 +153,13 @@
             scrollToBottom();
         }
 
+        function requestFiles() {
+            $('#file-upload-form').find('input').click();
+        }
+
+        $('#file-upload-form').find('input').on('change', function () {
+            $('#upload-documents').click();
+        })
+
     </script>
 {% endblock %}

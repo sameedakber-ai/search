@@ -2,10 +2,24 @@
 
     {#  Document Management  #}
     <div class="col-span-1 px-4 justify-center h-[calc(100vh-75px)] overflow-y-auto">
-        <div class="w-full pt-10">
+        <div class="w-full pt-6">
+
+            <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1" onclick="requestFiles()">
+                <div class="flex items-center space-x-2">
+                    <div class="rounded-full">
+                        {% include "components/logo.html" %}
+                    </div>
+                    <div>
+                        New Directory
+                    </div>
+                </div>
+                <div>
+                    {% include "components/edit-icon.html" %}
+                </div>
+            </button>
 
             {#  Drag and Drop Container  #}
-            <div class="bg-black p-4 mt-1 rounded-md">
+            <div class="bg-black p-4 mt-1 rounded-md" hidden>
 
                 <p>Drag and drop directory</p>
                 <p class="text-gray-400 text-xs">Limit 50 mb</p>
@@ -39,7 +53,7 @@
 
 
             {#  Directory List  #}
-            <div class="mt-12" id="directory-list">
+            <div class="mt-8" id="directory-list">
 
                 {% for directory in directories %}
 
