@@ -123,13 +123,19 @@
 
             {#  Conversation History  #}
             {% if selected_directory %}
-                <div class="w-1/2 overflow-x-auto pt-10 mx-auto text-start pb-20">
+                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-24 max-w-4xl">
                     {% for question,answer in selected_directory.chat_history.chat_history %}
                         <div>
-                            <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                            <div class="font-bold">
+                                You
+                            </div>
+                            <div class="bg-gray-700 text-white rounded-md p-3 mb-6">
                                 {{ question }}
                             </div>
-                            <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                            <div class="font-bold">
+                                Bot
+                            </div>
+                            <div class="bg-gray-700 text-white rounded-md p-3 mb-6">
                                 {{ answer|safe }}
                             </div>
                         </div>
@@ -139,7 +145,7 @@
             {% endif %}
 
             <div class="fixed bottom-2 left-3/4 w-1/2 transform -translate-x-3/4 rounded-lg">
-                <form action="" method="post" unicorn:submit.prevent="respond" class="max-w-3xl mx-auto">
+                <form action="" method="post" unicorn:submit.prevent="respond" class="max-w-4xl mx-auto">
 
                     <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
 
