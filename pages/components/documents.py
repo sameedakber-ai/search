@@ -156,7 +156,7 @@ class DocumentsView(UnicornView):
         for source in sources:
             modified_source = "/".join(source.split(f"\\")[3:])
             request_source = "___".join(source.split(f"\\"))
-            formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event)">{modified_source}</a>'
+            formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source}</a>'
         formatted_response += '</div>'
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
