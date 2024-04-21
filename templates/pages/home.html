@@ -13,7 +13,7 @@
         </nav>
     {% endif %}
 
-    <main class="bg-gray-800 text-white min-h-[calc(100vh-75px)]">
+    <main class="bg-gray-800 text-white">
         {% if user.is_authenticated %}
             {% unicorn "documents" %}
         {% endif %}
@@ -135,6 +135,22 @@
                     ul.appendChild(li);
                 }
             });
+        }
+
+        // Function to scroll to the bottom of the chat container
+        function scrollToBottom() {
+            console.log('bottom');
+            var chatContainer = document.getElementById("chat");
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Call scrollToBottom function when new message is added
+        function addMessage(message) {
+            var messagesContainer = document.getElementById("messages");
+            var newMessage = document.createElement("div");
+            newMessage.textContent = message;
+            messagesContainer.appendChild(newMessage);
+            scrollToBottom();
         }
 
     </script>

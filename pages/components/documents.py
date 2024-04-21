@@ -144,6 +144,7 @@ class DocumentsView(UnicornView):
         formatted_response += '</div>'
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
+        self.call("scrollToBottom")
 
     def update_chat_selection(self, directory_id):
         self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
@@ -153,6 +154,7 @@ class DocumentsView(UnicornView):
         self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
         self.selected_directory.embeddingdirectory.processed = True
         self.selected_directory.embeddingdirectory.save()
+        self.call("scrollToBottom")
 
     def refreshDirectories(self):
         self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')

@@ -1,12 +1,8 @@
-<div class="grid grid-cols-4 min-h-[calc(100vh-75px)]">
+<div class="grid grid-cols-4">
 
     {#  Document Management  #}
-    <div class="col-span-1 px-4 py-20 justify-center">
-        <div class="w-full">
-
-            {#  Document Management Header  #}
-            <h2 class="text-2xl font-medium mb-3">Your documents</h2>
-            <small>Upload your text documents</small>
+    <div class="col-span-1 px-4 justify-center h-[calc(100vh-75px)] overflow-y-auto">
+        <div class="w-full pt-10">
 
             {#  Drag and Drop Container  #}
             <div class="bg-black p-4 mt-1 rounded-md">
@@ -109,35 +105,38 @@
 
 
     {#  Document Chat  #}
-    <div class="col-span-3 px-8 py-20 bg-black flex justify-center items-center">
+    <div id="chat" class="col-span-3 px-8 bg-black flex justify-center h-[calc(100vh-75px)] overflow-y-auto {% if not selected_directory %}items-center{% endif %}">
         <div class="relative w-full text-center">
 
-            {#  Document Chat Header  #}
-            {% include "components/document-icon.html" %}
-            <h1 class="text-3xl font-bold mt-4">
-                {% if selected_directory %}Chatting with { {{ selected_directory.name }} } {% else %}Chat with
-                    documents{% endif %}
-            </h1>
+            {% if not selected_directory %}
+                {#  Document Chat Header  #}
+                {% include "components/document-icon.html" %}
+                <h1 class="text-3xl font-bold mt-4">
+                    Chat with documents
+                </h1>
 
-            {#  Database State Specific message #}
-            <p class="mt-2">
-                {% if selected_directory %}Ask a question about your documents:{% elif directories %}Select
-                    a directory from the list{% else %}Upload documents to
-                    begin{% endif %}
-            </p>
+                {#  Database State Specific message #}
+                <p class="mt-2">
+                    {% if directories %}Select a directory from the list{% else %}Upload directory to begin{% endif %}
+                </p>
+            {% endif %}
 
             {#  Conversation History  #}
-            {% for question,answer in selected_directory.chat_history.chat_history %}
-                <div>
-                    <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
-                        {{ question }}
-                    </div>
-                    <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
-                        {{ answer|safe }}
-                    </div>
+            {% if selected_directory %}
+                <div class="w-1/2 overflow-x-auto pt-10 mx-auto text-start pb-20">
+                    {% for question,answer in selected_directory.chat_history.chat_history %}
+                        <div>
+                            <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                                {{ question }}
+                            </div>
+                            <div class="bg-gray-700 text-white rounded-md p-3 mb-4">
+                                {{ answer|safe }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <div id="show-document">{{ document|safe }}</div>
                 </div>
-            {% endfor %}
-            <div id="show-document">{{ document|safe }}</div>
+            {% endif %}
 
             <div class="fixed bottom-2 left-3/4 w-1/2 transform -translate-x-3/4 rounded-lg">
                 <form action="" method="post" unicorn:submit.prevent="respond" class="max-w-3xl mx-auto">
