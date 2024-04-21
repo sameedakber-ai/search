@@ -1,7 +1,7 @@
 <div class="grid grid-cols-4">
 
     {#  Document Management  #}
-    <div class="col-span-1 px-4 justify-center h-[calc(100vh-75px)] overflow-y-auto">
+    <div class="col-span-1 px-4 justify-center h-screen overflow-y-auto">
         <div class="w-full pt-6">
 
             <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1"
@@ -91,7 +91,7 @@
 
     {#  Document Chat  #}
     <div id="chat"
-         class="col-span-3 px-8 bg-black flex justify-center h-[calc(100vh-75px)] overflow-y-auto {% if not selected_directory.chat_history.chat_history %}items-center{% endif %}">
+         class="col-span-3 px-8 bg-black flex justify-center h-screen overflow-y-auto {% if not selected_directory.chat_history.chat_history %}items-center{% endif %}">
         <div class="relative w-full text-center">
 
             {% if not selected_directory %}

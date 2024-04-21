@@ -5,7 +5,9 @@
 
 {% block content %}
 
-    {% include "components/navbar.html" %}
+    {% if not user.is_authenticated %}
+        {% include "components/navbar.html" %}
+    {% endif %}
 
     {% if not user.is_authenticated %}
         <nav class="p-1 bg-gray-700 text-white flex justify-center text-sm font-medium">
@@ -13,7 +15,7 @@
         </nav>
     {% endif %}
 
-    <main class="bg-gray-800 text-white">
+    <main class="bg-gray-800 text-white {% if not user.is_authenticated %}h-[calc(100vh-104px)]{% endif %}">
         {% if user.is_authenticated %}
             {% unicorn "documents" %}
         {% endif %}
