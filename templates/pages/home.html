@@ -34,7 +34,7 @@
                 fetch('/fetch_document/?source=' + source)
                     .then(response => response.json())
                     .then(data => {
-                        var newContainer = $('<div class="text-white ps-3 mt-3 mb-3 document">').html('' + marked.parse(data['document']) + '</div>');
+                        var newContainer = $('<div class="text-white px-3 mt-3 mb-3 w-full overflow-x-auto document">').html('' + marked.parse(data['document']) + '</div>');
                         $(element).after(newContainer)
                     })
                     .catch(error => {

@@ -43,7 +43,6 @@ def home_page(request, *args, **kwargs):
 
 def fetch_directory_tree(request):
     directory_id = request.GET.get('directory_id')
-    print(directory_id)
     return JsonResponse({'directory': DirectoryRoot.objects.filter(id=directory_id).get().structure})
 
 
@@ -51,7 +50,6 @@ def fetch_document(request):
     path = request.GET.get('source')
     path = "\\".join(path.split('___'))
     extension = path.split('.')[-1]
-    print(extension)
     if os.path.exists(path):
         loader = TextLoader(path)
         if extension == 'txt' or extension == 'md':

@@ -132,19 +132,29 @@
                     </h1>
                     <p class="mt-2">Start a new chat</p>
                 {% endif %}
-                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-24 max-w-4xl">
+                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-10 max-w-4xl">
                     {% for question,answer in selected_directory.chat_history.chat_history %}
                         <div class="chat-history-item">
-                            <div class="font-bold">
-                                You
+                            <div class="font-bold flex space-x-1 items-center mb-2">
+                                <div>
+                                    {% include "components/user-icon.html" %}
+                                </div>
+                                <div>
+                                    You
+                                </div>
                             </div>
-                            <div class="bg-gray-700 text-white rounded-md p-3 mb-6">
+                            <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
                                 {{ question }}
                             </div>
-                            <div class="font-bold">
-                                Bot
+                            <div class="font-bold flex space-x-1 items-center mb-2">
+                                <div>
+                                    {% include "components/logo.html" %}
+                                </div>
+                                <div>
+                                    Bot
+                                </div>
                             </div>
-                            <div class="bg-gray-700 text-white rounded-md p-3 mb-6">
+                            <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
                                 {{ answer|safe }}
                             </div>
                         </div>

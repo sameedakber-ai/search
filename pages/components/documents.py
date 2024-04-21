@@ -161,6 +161,7 @@ class DocumentsView(UnicornView):
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
         self.call("scrollToBottom")
+        self.initialize_directory_data()
 
     def update_chat_selection(self, directory_id):
         self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
@@ -185,6 +186,5 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
     def logout_user(self):
-        print('yes')
         logout(self.request)
         return redirect('/')
