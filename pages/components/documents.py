@@ -18,6 +18,9 @@ from langchain.chains import ConversationalRetrievalChain
 from collections import defaultdict
 from django.contrib.humanize.templatetags.humanize import naturalday
 
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+
 load_dotenv()
 
 loaders = {
@@ -180,3 +183,8 @@ class DocumentsView(UnicornView):
         self.selected_directory = ''
         self.selected_vector_db_path = ''
         self.initialize_directory_data()
+
+    def logout_user(self):
+        print('yes')
+        logout(self.request)
+        return redirect('/')

@@ -84,8 +84,19 @@
                 {% endif %}
 
             </div>
-        </div>
 
+            <button class="text-md font-bold rounded-lg p-1 fixed w-24 bottom-4" unicorn:click.prevent="logout_user">
+                <div class="flex items-center space-x-2">
+                    <div class="rounded-full">
+                        {% include "components/logo.html" %}
+                    </div>
+                    <div>
+                        LOGOUT
+                    </div>
+                </div>
+            </button>
+
+        </div>
     </div>
 
 
@@ -105,7 +116,8 @@
 
                 {#  Database State Specific message #}
                 <p class="mt-2">
-                    {% if directories %}Select a directory from the list{% else %}No directories found. Upload new directory to begin{% endif %}
+                    {% if directories %}Select a directory from the list{% else %}No directories found. Upload new
+                        directory to begin{% endif %}
                 </p>
             {% endif %}
 
