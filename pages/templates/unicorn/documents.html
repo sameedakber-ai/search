@@ -1,7 +1,7 @@
 <div class="grid grid-cols-4">
 
     {#  Document Management  #}
-    <div class="col-span-1 px-4 justify-center h-screen overflow-y-auto">
+    <div class="col-span-1 px-4 justify-center h-[calc(100vh-100px)] overflow-y-auto">
         <div class="w-full pt-6">
 
             <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1"
@@ -83,6 +83,22 @@
                     </div>
                 {% endif %}
 
+            </div>
+
+            <div class="text-md font-bold rounded-lg p-1 fixed w-72 bottom-12">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="rounded-full">
+                            {% include "components/logo.html" %}
+                        </div>
+                        <div>
+                            SIMILARITY CUTOFF
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" unicorn:model.defer="cutoff_score" maxlength="3" class="rounded-md p-2 bg-black text-sm w-10">
+                    </div>
+                </div>
             </div>
 
             <button class="text-md font-bold rounded-lg p-1 fixed w-24 bottom-4" unicorn:click.prevent="logout_user">

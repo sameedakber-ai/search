@@ -38,7 +38,7 @@ class DocumentsView(UnicornView):
     question = ''
     selected_directory = ''
     selected_vector_db_path = ''
-    cutoff_score = 0.50
+    cutoff_score = 0.6
 
     def create_directory_loader(self, file_type, directory_path):
         return DirectoryLoader(
@@ -126,16 +126,15 @@ class DocumentsView(UnicornView):
         which might reference the chat history, formulate a standalone question \
         which can be understood without the chat history. Do NOT answer the question, \
         just reformulate it if needed and otherwise return it as is. If the question implicitly refers to something in the chat history, \
-        make sure to explicitly state that information in the reformulated question. 
-        {chat_history}
-        {question}
+        make sure to explicitly state that information in the reformulated question. Do not change the question wording if it does not \
+        relate to the previous chat, return it as is.
+        Chat History: {chat_history}
+        Question: {question}
         """
         prompt_template = ChatPromptTemplate.from_template(contextualize_q_system_prompt)
-        print(len(self.selected_directory.chat_history['chat_history']))
         chat_history = ""
         for user, llm in self.selected_directory.chat_history['chat_history'][-3:]:
             chat_history += 'USER: {}\nYOU: {}\n\n'.format(user, llm)
-        print(chat_history)
         prompt = prompt_template.format(chat_history=chat_history,
                                         question=self.question)
         model = ChatOpenAI()
@@ -173,34 +172,40 @@ class DocumentsView(UnicornView):
         docs = self.get_k_relevant_documents(db, query, k=5)
         relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
 
-        print('Total number of relevant files: ', len(relevant_docs))
+        if relevant_docs is None:
+            self.call('showNoRelevantDataMessage')
+        else:
+            print('Total number of relevant files: ', len(relevant_docs))
 
-        sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
-        scores = [round(_score, 2) for doc, _score in relevant_docs]
+            sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
+            scores = [round(_score, 2) for doc, _score in relevant_docs]
 
-        split_documents = []
-        for doc in relevant_docs:
-            split_documents.extend(self.split_document(doc[0].page_content))
+            split_documents = []
+            for doc in relevant_docs:
+                split_documents.extend(self.split_document(doc[0].page_content))
 
-        db = Chroma.from_documents(documents=split_documents, embedding=OpenAIEmbeddings())
-        docs = self.get_k_relevant_documents(db, query, k=4)
-        relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
+            db = Chroma.from_documents(documents=split_documents, embedding=OpenAIEmbeddings())
+            docs = self.get_k_relevant_documents(db, query, k=4)
+            relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
 
-        print('Total number of relevant chunks: ', len(relevant_docs))
+            if relevant_docs is None:
+                self.call('showNoRelevantDataMessage')
+            else:
+                print('Total number of relevant chunks: ', len(relevant_docs))
 
-        history = self.selected_directory.chat_history['chat_history']
-        llm_response = self.get_llm_response(query, relevant_docs, history)
+                history = self.selected_directory.chat_history['chat_history']
+                llm_response = self.get_llm_response(query, relevant_docs, history)
 
-        formatted_response = f"{llm_response}<div class='mt-4'>"
-        for source, score in zip(sources, scores):
-            modified_source = "/".join(source.split(f"\\")[3:])
-            request_source = "___".join(source.split(f"\\"))
-            formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
-        formatted_response += '</div>'
+                formatted_response = f"{llm_response}<div class='mt-4'>"
+                for source, score in zip(sources, scores):
+                    modified_source = "/".join(source.split(f"\\")[3:])
+                    request_source = "___".join(source.split(f"\\"))
+                    formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
+                formatted_response += '</div>'
 
-        self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
-        self.selected_directory.save()
-        self.call("scrollToBottom")
+                self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
+                self.selected_directory.save()
+                self.call("scrollToBottom")
         self.initialize_directory_data()
 
     def update_chat_selection(self, directory_id):
@@ -233,7 +238,7 @@ class DocumentsView(UnicornView):
         scores = [round(_score, 2) for doc, _score in documents]
         scores.sort(reverse=True)
         best = []
-        if scores[0] <= cutoff_score:
+        if scores[0] <= float(cutoff_score):
             return None
 
         for i in range(len(scores) - 1):
