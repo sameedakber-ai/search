@@ -112,14 +112,16 @@ class DocumentsView(UnicornView):
         return conversation_chain
 
     def get_recontextualized_question(self):
-        contextualize_q_system_prompt = """Given a chat history and the latest user question \
-        which might reference context in the chat history, formulate a standalone question \
+        contextualize_q_system_prompt = """Given a labeled chat history between you and the user, and the latest user question \
+        which might reference the chat history, formulate a standalone question \
         which can be understood without the chat history. Do NOT answer the question, \
-        just reformulate it if needed and otherwise return it as is.
+        just reformulate it if needed and otherwise return it as is. If the question implicitly refers to something in the chat history, \
+        make sure to explicitly state that information in the reformulated question. 
         {chat_history}
         {question}
         """
         prompt_template = ChatPromptTemplate.from_template(contextualize_q_system_prompt)
+        print(len(self.selected_directory.chat_history['chat_history']))
         prompt = prompt_template.format(chat_history=self.selected_directory.chat_history['chat_history'],
                                         question=self.question)
         model = ChatOpenAI()
