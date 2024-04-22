@@ -132,7 +132,8 @@
                     </h1>
                     <p class="mt-2">Start a new chat</p>
                 {% endif %}
-                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-10 max-w-4xl" id="chat-history">
+                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-10 max-w-4xl"
+                     id="chat-history">
                     {% for question,answer in selected_directory.chat_history.chat_history %}
                         <div class="chat-history-item">
                             <div class="font-bold flex space-x-1 items-center mb-2">
@@ -178,7 +179,6 @@
 
                 </form>
             </div>
-            {#  User Question upload  #}
 
         </div>
     </div>

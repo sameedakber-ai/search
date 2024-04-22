@@ -5,6 +5,7 @@ from django_unicorn.components import UnicornView
 from pages.models import DirectoryRoot
 
 import os
+import re
 from dotenv import load_dotenv
 
 from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, DirectoryLoader, PyPDFLoader, \
@@ -122,7 +123,11 @@ class DocumentsView(UnicornView):
         """
         prompt_template = ChatPromptTemplate.from_template(contextualize_q_system_prompt)
         print(len(self.selected_directory.chat_history['chat_history']))
-        prompt = prompt_template.format(chat_history=self.selected_directory.chat_history['chat_history'],
+        chat_history = ""
+        for user, llm in self.selected_directory.chat_history['chat_history'][-3:]:
+            chat_history += 'USER: {}\nYOU: {}\n\n'.format(user, llm)
+        print(chat_history)
+        prompt = prompt_template.format(chat_history=chat_history,
                                         question=self.question)
         model = ChatOpenAI()
         response_text = model.predict(prompt)
@@ -133,7 +138,8 @@ class DocumentsView(UnicornView):
             You are a tech assistant for an IT department. Answer the question based only on the following context:
             {context}
             ---
-            Answer the question based on the above context: {question}
+            Answer the question based on the above context, and format your answer as a neat html code with tags included;
+            keep the outermost tag a <div>; use tailwind css styling on all tags: {question}
             """
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
@@ -141,6 +147,8 @@ class DocumentsView(UnicornView):
 
         model = ChatOpenAI()
         response = model.predict(prompt)
+        pattern = re.compile(r'\b(?:bg|text)-\w+\s*')
+        response = re.sub(pattern, '', response)
 
         return response
 
