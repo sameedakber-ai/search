@@ -158,15 +158,18 @@ class DocumentsView(UnicornView):
             self.selected_directory = DirectoryRoot.objects.filter(name=self.selected_directory['name']).first()
         query = self.get_recontextualized_question()
         print(query)
-        relevant_docs = self.get_k_relevant_documents(db, query, k=2)
+        docs = self.get_k_relevant_documents(db, query, k=3)
+        relevant_docs = self.sort_docs_by_relevance_scores(docs)
         sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
+        scores = [round(_score, 2) for doc, _score in relevant_docs]
+        print(sources)
         history = self.selected_directory.chat_history['chat_history']
         llm_response = self.get_llm_response(query, relevant_docs, history)
         formatted_response = f"{llm_response}<div class='mt-4'>"
-        for source in sources:
+        for source, score in zip(sources, scores):
             modified_source = "/".join(source.split(f"\\")[3:])
             request_source = "___".join(source.split(f"\\"))
-            formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source}</a>'
+            formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
         formatted_response += '</div>'
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
@@ -198,3 +201,21 @@ class DocumentsView(UnicornView):
     def logout_user(self):
         logout(self.request)
         return redirect('/')
+
+    def sort_docs_by_relevance_scores(self, documents):
+        scores = [round(_score, 2) for doc, _score in documents]
+        scores.sort(reverse=True)
+        best = []
+        if scores[0] <= 0.60:
+            return None
+
+        for i in range(len(scores) - 1):
+            curr = scores[i]
+            next = scores[i+1]
+            best.append(documents[i])
+            if ((curr-next)/curr) >= 0.3333:
+                break
+
+        return best
+
+
