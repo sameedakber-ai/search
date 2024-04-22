@@ -132,16 +132,12 @@
                     </h1>
                     <p class="mt-2">Start a new chat</p>
                 {% endif %}
-                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-10 max-w-4xl">
+                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-10 max-w-4xl" id="chat-history">
                     {% for question,answer in selected_directory.chat_history.chat_history %}
                         <div class="chat-history-item">
                             <div class="font-bold flex space-x-1 items-center mb-2">
-                                <div>
-                                    {% include "components/user-icon.html" %}
-                                </div>
-                                <div>
-                                    You
-                                </div>
+                                <div>{% include "components/user-icon.html" %}</div>
+                                <div>You</div>
                             </div>
                             <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
                                 {{ question }}
@@ -167,11 +163,11 @@
 
                     <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
 
-                        <input unicorn:model.defer="question" type="text"
+                        <input unicorn:model.defer="question" type="text" id="question-input"
                                class="bg-transparent focus:outline-none w-full"
                                {% if not selected_directory %}disabled{% endif %}>
 
-                        <button type="submit" {% if not selected_directory %}disabled{% endif %}>
+                        <button type="submit" {% if not selected_directory %}disabled{% endif %} onclick="updateChat()">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                                  class="w-6 h-6">
                                 <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
