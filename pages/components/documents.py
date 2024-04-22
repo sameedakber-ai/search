@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, DirectoryLoader, PyPDFLoader, \
     CSVLoader, Docx2txtLoader
-from langchain_text_splitters import MarkdownHeaderTextSplitter, MarkdownTextSplitter
+from langchain_text_splitters import MarkdownHeaderTextSplitter, MarkdownTextSplitter, RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -38,6 +38,7 @@ class DocumentsView(UnicornView):
     question = ''
     selected_directory = ''
     selected_vector_db_path = ''
+    cutoff_score = 0.50
 
     def create_directory_loader(self, file_type, directory_path):
         return DirectoryLoader(
@@ -83,9 +84,10 @@ class DocumentsView(UnicornView):
 
         return all_documents
 
-    def create_vector_db(self, documents, chroma_path):
+    def create_vector_db(self, documents, chroma_path, persist=True):
         db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
-        db.persist()
+        if persist:
+            db.persist()
 
     def get_vector_db(self, chroma_path):
         embedding_function = OpenAIEmbeddings()
@@ -94,6 +96,13 @@ class DocumentsView(UnicornView):
 
     def get_k_relevant_documents(self, db, query, k=2):
         return db.similarity_search_with_relevance_scores(query, k)
+
+    def split_document(self, document):
+        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=2000,
+            chunk_overlap=400
+        )
+        return text_splitter.create_documents([document])
 
     def create_db(self):
         if not os.path.exists(self.selected_vector_db_path):
@@ -154,23 +163,41 @@ class DocumentsView(UnicornView):
 
     def respond(self):
         db = self.get_vector_db(chroma_path=self.selected_vector_db_path)
+
         if isinstance(self.selected_directory, dict):
             self.selected_directory = DirectoryRoot.objects.filter(name=self.selected_directory['name']).first()
+
         query = self.get_recontextualized_question()
         print(query)
-        docs = self.get_k_relevant_documents(db, query, k=3)
-        relevant_docs = self.sort_docs_by_relevance_scores(docs)
+
+        docs = self.get_k_relevant_documents(db, query, k=5)
+        relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
+
+        print('Total number of relevant files: ', len(relevant_docs))
+
         sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
         scores = [round(_score, 2) for doc, _score in relevant_docs]
-        print(sources)
+
+        split_documents = []
+        for doc in relevant_docs:
+            split_documents.extend(self.split_document(doc[0].page_content))
+
+        db = Chroma.from_documents(documents=split_documents, embedding=OpenAIEmbeddings())
+        docs = self.get_k_relevant_documents(db, query, k=4)
+        relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
+
+        print('Total number of relevant chunks: ', len(relevant_docs))
+
         history = self.selected_directory.chat_history['chat_history']
         llm_response = self.get_llm_response(query, relevant_docs, history)
+
         formatted_response = f"{llm_response}<div class='mt-4'>"
         for source, score in zip(sources, scores):
             modified_source = "/".join(source.split(f"\\")[3:])
             request_source = "___".join(source.split(f"\\"))
             formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
         formatted_response += '</div>'
+
         self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
         self.selected_directory.save()
         self.call("scrollToBottom")
@@ -202,11 +229,11 @@ class DocumentsView(UnicornView):
         logout(self.request)
         return redirect('/')
 
-    def sort_docs_by_relevance_scores(self, documents):
+    def sort_docs_by_relevance_scores(self, documents, cutoff_score):
         scores = [round(_score, 2) for doc, _score in documents]
         scores.sort(reverse=True)
         best = []
-        if scores[0] <= 0.60:
+        if scores[0] <= cutoff_score:
             return None
 
         for i in range(len(scores) - 1):
