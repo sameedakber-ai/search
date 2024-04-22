@@ -161,6 +161,16 @@ class DocumentsView(UnicornView):
         return response
 
     def respond(self):
+
+        if not self.cutoff_score:
+            self.cutoff_score = 0.60
+
+        if not str(self.cutoff_score).isdigit():
+            self.cutoff_score = 0.60
+
+        if float(self.cutoff_score) < 0.50 or float(self.cutoff_score) > 0.90:
+            self.cutoff_score = 0.50
+
         db = self.get_vector_db(chroma_path=self.selected_vector_db_path)
 
         if isinstance(self.selected_directory, dict):
