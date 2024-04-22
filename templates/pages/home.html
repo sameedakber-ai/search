@@ -179,5 +179,17 @@
             $('#chat-history').append(newContainer);
         }
 
+        function decrement() {
+            if ($('#cutoff_score').val() > 0.3) {
+                $('#cutoff_score').val(parseFloat($('#cutoff_score').val() - 0.1).toFixed(1));
+            }
+        }
+
+        function increment() {
+            if ($('#cutoff_score').val() < 0.9) {
+                $('#cutoff_score').val(parseFloat($('#cutoff_score').val() - (-0.1)).toFixed(1));
+            }
+        }
+
     </script>
 {% endblock %}

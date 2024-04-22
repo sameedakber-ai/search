@@ -1,7 +1,7 @@
 <div class="grid grid-cols-4">
 
     {#  Document Management  #}
-    <div class="col-span-1 px-4 justify-center h-[calc(100vh-100px)] overflow-y-auto">
+    <div class="col-span-1 px-4 justify-center h-[calc(100vh-120px)] overflow-y-auto">
         <div class="w-full pt-6">
 
             <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1"
@@ -85,18 +85,19 @@
 
             </div>
 
-            <div class="text-md font-bold rounded-lg p-1 fixed w-72 bottom-12">
+            <div class="text-md font-bold rounded-lg p-1 fixed w-72 bottom-12 mb-3">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <div class="rounded-full">
-                            {% include "components/logo.html" %}
-                        </div>
-                        <div>
-                            SIMILARITY CUTOFF
-                        </div>
-                    </div>
-                    <div>
-                        <input type="text" unicorn:model.defer="cutoff_score" maxlength="3" class="rounded-md p-2 bg-black text-sm w-10">
+                    <div class="relative flex items-center max-w-[7rem]">
+                        <button type="button" id="decrement-button" onclick="decrement()"
+                                class="rotate-180 bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 hover:bg-gray-200 border border-gray-300 rounded-e-lg p-3 h-11 focus:ring-gray-100 dark:focus:ring-gray-700 focus:ring-2 focus:outline-none">
+                            {% include "components/increment-icon.html" %}
+                        </button>
+                        <input type="text" unicorn:model.defer="cutoff_score" id="cutoff_score" disabled
+                               class="bg-gray-50 border-x-0 border-gray-300 h-11 text-center text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 block w-full py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
+                        <button type="button" id="increment-button" onclick="increment()"
+                                class="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 hover:bg-gray-200 border border-gray-300 rounded-e-lg p-3 h-11 focus:ring-gray-100 dark:focus:ring-gray-700 focus:ring-2 focus:outline-none">
+                            {% include "components/decrement-icon.html" %}
+                        </button>
                     </div>
                 </div>
             </div>
