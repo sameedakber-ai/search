@@ -170,7 +170,7 @@ class DocumentsView(UnicornView):
         query = self.get_recontextualized_question()
         print(query)
 
-        docs = self.get_k_relevant_documents(db, query, k=3)
+        docs = self.get_k_relevant_documents(db, query, k=5)
         relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
 
         if relevant_docs is None:
