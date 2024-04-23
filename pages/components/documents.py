@@ -162,15 +162,6 @@ class DocumentsView(UnicornView):
 
     def respond(self):
 
-        if not self.cutoff_score:
-            self.cutoff_score = 0.60
-
-        if not str(self.cutoff_score).isdigit():
-            self.cutoff_score = 0.60
-
-        if float(self.cutoff_score) < 0.50 or float(self.cutoff_score) > 0.90:
-            self.cutoff_score = 0.50
-
         db = self.get_vector_db(chroma_path=self.selected_vector_db_path)
 
         if isinstance(self.selected_directory, dict):
@@ -179,7 +170,7 @@ class DocumentsView(UnicornView):
         query = self.get_recontextualized_question()
         print(query)
 
-        docs = self.get_k_relevant_documents(db, query, k=5)
+        docs = self.get_k_relevant_documents(db, query, k=3)
         relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
 
         if relevant_docs is None:
@@ -195,7 +186,7 @@ class DocumentsView(UnicornView):
                 split_documents.extend(self.split_document(doc[0].page_content))
 
             db = Chroma.from_documents(documents=split_documents, embedding=OpenAIEmbeddings())
-            docs = self.get_k_relevant_documents(db, query, k=4)
+            docs = self.get_k_relevant_documents(db, query, k=3)
             relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
 
             if relevant_docs is None:
@@ -216,6 +207,7 @@ class DocumentsView(UnicornView):
                 self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
                 self.selected_directory.save()
                 self.call("scrollToBottom")
+        self.question = ''
         self.initialize_directory_data()
 
     def update_chat_selection(self, directory_id):
@@ -245,6 +237,8 @@ class DocumentsView(UnicornView):
         return redirect('/')
 
     def sort_docs_by_relevance_scores(self, documents, cutoff_score):
+        if len(documents) == 1:
+            return documents
         scores = [round(_score, 2) for doc, _score in documents]
         scores.sort(reverse=True)
         best = []
@@ -252,12 +246,29 @@ class DocumentsView(UnicornView):
             return None
 
         for i in range(len(scores) - 1):
-            curr = scores[i]
+            curr = scores[0]
             next = scores[i+1]
             best.append(documents[i])
-            if ((curr-next)/curr) >= 0.3333:
+            if ((curr-next)/curr) >= 0.18:
                 break
 
         return best
+
+    def increment(self):
+        cutoff_score = float(self.cutoff_score)
+        if cutoff_score < 0.9:
+            cutoff_score += 0.1
+        self.cutoff_score = round(cutoff_score,1)
+        self.call('increment')
+        self.initialize_directory_data()
+
+    def decrement(self):
+        cutoff_score = float(self.cutoff_score)
+        if cutoff_score > 0.3:
+            cutoff_score -= 0.1
+        self.cutoff_score = round(cutoff_score,1)
+        self.call('decrement')
+        self.initialize_directory_data()
+
 
 
