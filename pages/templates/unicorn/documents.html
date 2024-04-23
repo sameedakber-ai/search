@@ -182,7 +182,7 @@
                     <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
 
                         <input unicorn:model.defer="question" type="text" id="question-input"
-                               class="bg-transparent focus:outline-none w-full"
+                               class="bg-transparent focus:outline-none w-full" placeholder="Message Bot ..."
                                {% if not selected_directory %}disabled{% endif %}>
 
                         <button type="submit" {% if not selected_directory %}disabled{% endif %} onclick="updateChat()">
