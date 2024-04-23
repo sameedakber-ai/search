@@ -1,17 +1,39 @@
 <div>
     {% if not user.is_authenticated %}
         <div>
-            <a x-show="register_btn_show" href="" x-on:click.prevent="register_show=!register_show, register_btn_show=!register_show, login_btn_show=!register_show" class="font-bold text-sm">REGISTER</a>
+            <a x-show="register_btn_show" href=""
+               x-on:click.prevent="register_show=!register_show, register_btn_show=!register_show, login_btn_show=!register_show"
+               class="font-bold text-md">REGISTER</a>
             <div x-show="register_show">
                 <form action="" method="post" unicorn:submit.prevent="register">
-                    <input type="text" unicorn:model.defer="username" class="bg-black rounded-lg text-white text-sm py-1 px-2"
-                           placeholder="username"/>
-                    <input type="email" unicorn:model.defer="email" class="bg-black rounded-lg text-white text-sm py-1 px-2"
-                           placeholder="email"/>
-                    <input type="password" unicorn:model.defer="password" class="bg-black rounded-lg text-white text-sm py-1 px-2"
-                           placeholder="password"/>
-                    <button type="submit" class="bg-gray-700 text-white text-xs rounded-md py-1 px-2">register</button>
+                    <input type="text" unicorn:model.defer="username" class="bg-black rounded-lg text-white p-3"
+                           placeholder="username" required/>
+                    <input type="email" unicorn:model.defer="email" class="bg-black rounded-lg text-white p-3"
+                           placeholder="email" required/>
+                    <input type="password" unicorn:model.defer="password" class="bg-black rounded-lg text-white p-3"
+                           placeholder="password" required/>
+                    <button type="submit" class="bg-gray-700 text-white rounded-md p-3">register</button>
                 </form>
+                {% if messages %}
+                    <ul class="messages mt-2">
+                        {% for message in messages %}
+                            <li{% if message.tags %}
+                                class="{{ message.tags }}"{% endif %}>
+                                <div class="text-red-600 p-1 text-sm flex items-center rounded-lg">
+                                    <div>
+                                        <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true"
+                                             xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        {{ message }}
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             </div>
         </div>
     {% endif %}
