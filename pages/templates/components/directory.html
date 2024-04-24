@@ -1,52 +1,52 @@
 <div class="directory bg-gray-900 text-sm rounded-md py-4 px-3 mb-3">
 
-                        <div class="flex justify-between">
+    <div class="flex justify-between">
 
-                            <div class="flex space-x-2 items-center">
-                                {% include "components/folder.html" %}
-                                <div>
-                                    {{ directory.name }}
-                                </div>
-                            </div>
+        <div class="flex space-x-2 items-center">
+            {% include "components/folder.html" %}
+            <div>
+                {{ directory.name }}
+            </div>
+        </div>
 
-                            <div class="flex space-x-1">
-                                <button class="bg-gray-700 text-xs py-1 px-2 rounded md expand-directory-btn"
-                                        data-directory="{{ directory.id }}" id="expand-{{ directory.id }}"
-                                        onclick="expand(this)">
-                                    Expand
-                                </button>
+        <div class="flex space-x-1">
+            <button class="bg-gray-700 text-xs py-1 px-2 rounded md expand-directory-btn"
+                    data-directory="{{ directory.id }}" id="expand-{{ directory.id }}"
+                    onclick="expand(this)">
+                Expand
+            </button>
 
-                                <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
-                                        unicorn:click.prevent="update_chat_selection({{ directory.id }})"
-                                        id="process-document-{{ directory.id }}">
+            <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
+                    unicorn:click.prevent="update_chat_selection({{ directory.id }})"
+                    id="process-document-{{ directory.id }}">
 
-                                    <div>
-                                        {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
-                                    </div>
+                <div>
+                    {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                </div>
 
-                                    {% if not directory.embeddingdirectory.processed %}
-                                        <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
-                                            {% include "components/loading.html" %}
-                                        </div>
-                                    {% endif %}
-
-                                </button>
-
-{#                                <button class="text-sm ps-1 rounded md"#}
-{#                                        unicorn:click.prevent="delete({{ directory.id }})">#}
-{#                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"#}
-{#                                         stroke-width="1.5" stroke="currentColor" class="w-4 h-4">#}
-{#                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>#}
-{#                                    </svg>#}
-{##}
-{#                                </button>#}
-
-                            </div>
-
-                        </div>
-
-                        <div class="overflow-x-visible show-uploaded-directory collapsed"
-                             data-directory="{{ directory.id }}">
-                        </div>
-
+                {% if not directory.embeddingdirectory.processed %}
+                    <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
+                        {% include "components/loading.html" %}
                     </div>
+                {% endif %}
+
+            </button>
+
+            {#                                <button class="text-sm ps-1 rounded md"#}
+            {#                                        unicorn:click.prevent="delete({{ directory.id }})">#}
+            {#                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"#}
+            {#                                         stroke-width="1.5" stroke="currentColor" class="w-4 h-4">#}
+            {#                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>#}
+            {#                                    </svg>#}
+            {##}
+            {#                                </button>#}
+
+        </div>
+
+    </div>
+
+    <div class="overflow-x-visible show-uploaded-directory collapsed"
+         data-directory="{{ directory.id }}">
+    </div>
+
+</div>

@@ -1,24 +1,21 @@
-import shutil
+from pages.models import DirectoryRoot
 
 from django_unicorn.components import UnicornView
-from pages.models import DirectoryRoot
+from django.contrib.humanize.templatetags.humanize import naturalday
+from django.contrib.auth import logout
+from django.shortcuts import redirect
 
 import os
 import re
+import shutil
 from dotenv import load_dotenv
+from collections import defaultdict
 
 from langchain_community.document_loaders import TextLoader, DirectoryLoader, PyPDFLoader, CSVLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
-from collections import defaultdict
-from django.contrib.humanize.templatetags.humanize import naturalday
-
-from django.contrib.auth import logout
-from django.shortcuts import redirect
 
 load_dotenv()
 
@@ -39,6 +36,8 @@ class DocumentsView(UnicornView):
     cutoff_score = 0.6
 
     def create_directory_loader(self, file_type, directory_path):
+        """Create separate directory loaders
+        for different file types"""
         return DirectoryLoader(
             path=directory_path,
             glob=f"**/*{file_type}",
@@ -63,12 +62,12 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
     def load_documents(self, dir_path):
+        """Load and combine documents from
+        different (file type) directory loaders"""
         pdf_loader = self.create_directory_loader('.pdf', dir_path)
         md_loader = self.create_directory_loader('.md', dir_path)
         txt_loader = self.create_directory_loader('.txt', dir_path)
         docx_loader = self.create_directory_loader('.docx', dir_path)
-
-        # loader = DirectoryLoader(dir_path, glob="**/*", loader_cls=TextLoader, silent_errors=True)
 
         all_documents = []
 
@@ -84,44 +83,41 @@ class DocumentsView(UnicornView):
 
         return all_documents
 
-    def create_vector_db(self, documents, chroma_path, persist=True):
+    def create_vector_db(self, documents, chroma_path = '', persist=True):
+        """Create and store vector database"""
         db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
         if persist:
             db.persist()
 
     def get_vector_db(self, chroma_path):
+        """Get stored vector database"""
         embedding_function = OpenAIEmbeddings()
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
         return db
 
-    def get_k_relevant_documents(self, db, query, k=2):
+    def get_k_relevant_documents(self, db, query, k):
+        """Do a vector similarity search
+        to extract relevant documents"""
         return db.similarity_search_with_relevance_scores(query, k)
 
-    def split_document(self, document):
+    def split_document(self, documents):
+        """Split a document into chunks"""
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=2000,
             chunk_overlap=400
         )
-        return text_splitter.create_documents([document])
+        return text_splitter.create_documents(documents)
 
     def create_db(self):
+        """Create and persist vector
+        database if it does not exist"""
         if not os.path.exists(self.selected_vector_db_path):
-            documents = self.load_documents(
-                'media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
+            documents = self.load_documents('media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
             vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
-        # self.directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
-
-    def get_conversation_chain(self, db):
-        llm = ChatOpenAI()
-        memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-        conversation_chain = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=db.as_retriever(),
-            memory=memory
-        )
-        return conversation_chain
 
     def get_recontextualized_question(self):
+        """Add context to user question
+        based on chat history"""
         contextualize_q_system_prompt = """Given a labeled chat history between you and the user, and the latest user question \
         which might reference the chat history, formulate a standalone question \
         which can be understood without the chat history. Do NOT answer the question, \
@@ -142,6 +138,8 @@ class DocumentsView(UnicornView):
         return response_text
 
     def get_llm_response(self, query, results, history):
+        """Feed the most relevant text
+        into LLM for response"""
         PROMPT_TEMPLATE = """
             You are a tech assistant for an IT department. Answer the question based only on the following context:
             {context}
@@ -162,40 +160,39 @@ class DocumentsView(UnicornView):
 
     def respond(self):
 
-        db = self.get_vector_db(chroma_path=self.selected_vector_db_path)
-
         if isinstance(self.selected_directory, dict):
             self.selected_directory = DirectoryRoot.objects.filter(name=self.selected_directory['name']).first()
 
         query = self.get_recontextualized_question()
-        print(query)
 
-        docs = self.get_k_relevant_documents(db, query, k=5)
+        db = self.get_vector_db(self.selected_vector_db_path)
+
+        docs = self.get_k_relevant_documents(db, query, k=3)
+
         relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
 
         if relevant_docs is None:
             self.call('showNoRelevantDataMessage')
         else:
-            print('Total number of relevant files: ', len(relevant_docs))
+            print('Total number of relevant chunks: ', len(relevant_docs))
 
             sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
             scores = [round(_score, 2) for doc, _score in relevant_docs]
 
-            split_documents = []
+            chunks = []
             for doc in relevant_docs:
-                split_documents.extend(self.split_document(doc[0].page_content))
+                chunks.extend(self.split_document([doc[0].page_content]))
 
-            db = Chroma.from_documents(documents=split_documents, embedding=OpenAIEmbeddings())
-            docs = self.get_k_relevant_documents(db, query, k=3)
-            relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
+            relevant_chunks = self.get_k_relevant_documents(db, query, k=5)
+
+            relevant_chunks = self.sort_docs_by_relevance_scores(relevant_chunks, self.cutoff_score)
 
             if relevant_docs is None:
                 self.call('showNoRelevantDataMessage')
             else:
-                print('Total number of relevant chunks: ', len(relevant_docs))
-
                 history = self.selected_directory.chat_history['chat_history']
-                llm_response = self.get_llm_response(query, relevant_docs, history)
+
+                llm_response = self.get_llm_response(query, relevant_chunks, history)
 
                 formatted_response = f"{llm_response}<div class='mt-4'>"
                 for source, score in zip(sources, scores):
@@ -206,18 +203,25 @@ class DocumentsView(UnicornView):
 
                 self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
                 self.selected_directory.save()
+
                 self.call("scrollToBottom")
+
         self.question = ''
         self.initialize_directory_data()
 
     def update_chat_selection(self, directory_id):
+        """Create new vector database when user processes uploaded documents OR
+        Get existing database"""
         self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
         self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id,
                                                                    self.selected_directory.embeddingdirectory.name)
+
         self.create_db()
         self.initialize_directory_data()
+
         self.selected_directory.embeddingdirectory.processed = True
         self.selected_directory.embeddingdirectory.save()
+
         self.call("scrollToBottom")
 
     def refreshDirectories(self):
@@ -237,6 +241,7 @@ class DocumentsView(UnicornView):
         return redirect('/')
 
     def sort_docs_by_relevance_scores(self, documents, cutoff_score):
+        """Relevance criteria for documents"""
         if len(documents) == 1:
             return documents
         scores = [round(_score, 2) for doc, _score in documents]
@@ -255,6 +260,7 @@ class DocumentsView(UnicornView):
         return best
 
     def increment(self):
+        """Increase similarity threshold"""
         cutoff_score = float(self.cutoff_score)
         if cutoff_score < 0.9:
             cutoff_score += 0.1
@@ -263,6 +269,7 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
     def decrement(self):
+        """Decrease similarity threshold"""
         cutoff_score = float(self.cutoff_score)
         if cutoff_score > 0.3:
             cutoff_score -= 0.1
