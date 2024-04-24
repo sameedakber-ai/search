@@ -1,0 +1,43 @@
+<button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1"
+        onclick="requestFiles()">
+    <div class="flex items-center space-x-2">
+        <div class="rounded-full">
+            {% include "components/logo.html" %}
+        </div>
+        <div>
+            New Directory
+        </div>
+    </div>
+    <div>
+        {% include "components/edit-icon.html" %}
+    </div>
+</button>
+
+<div class="bg-black p-4 mt-1 rounded-md" hidden>
+
+    <p>Drag and drop directory</p>
+    <p class="text-gray-400 text-xs">Limit 50 mb</p>
+    <p class="text-gray-400 text-xs">Supported file types: docx, pdf, txt, md</p>
+
+
+    <form action="/" method="post" enctype="multipart/form-data"
+          id="file-upload-form" class="mt-4">
+        {% csrf_token %}
+
+        <input class="text-sm" type="file" name="inpFile" id="inpFile"
+               multiple webkitdirectory="true" directory="true">
+
+        <button type="submit"
+                class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2 flex space-x-2 items-center"
+                id="upload-documents">
+            <div class="font-bold">Upload</div>
+            <div id="upload-spinner" class="hidden">{% include "components/loading.html" %}</div>
+        </button>
+
+    </form>
+</div>
+
+<form action="" method="post" unicorn:submit.prevent="refreshDirectories">
+    <button type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2" id="process-new-directory"
+            hidden></button>
+</form>

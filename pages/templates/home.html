@@ -28,6 +28,7 @@
         const myForm = document.getElementById('file-upload-form');
         const inpFile = document.getElementById('inpFile');
 
+        {# Fetch document from server #}
         function showDocument(source, event, element) {
             event.preventDefault();
             if ($(element).next('.document').length === 0) {
@@ -46,6 +47,7 @@
             }
         }
 
+        {# Fetch the directory structure from server #}
         function expand(element) {
             const directoryTree = $(element).closest(".directory").find('.show-uploaded-directory')[0];
             if ($(directoryTree).hasClass('collapsed')) {
@@ -70,7 +72,7 @@
             }
         }
 
-
+        {# Send uploaded files to the server as an asynchronous POST request #}
         myForm.addEventListener('submit', e => {
             e.preventDefault();
             if ($('#inpFile').val()) {
@@ -99,6 +101,7 @@
             }
         });
 
+        {# get csrf token to make the fetch request #}
         function getCookie(name) {
             var cookieValue = null;
             if (document.cookie && document.cookie !== '') {
@@ -114,6 +117,7 @@
             return cookieValue;
         }
 
+        {# Make and add file names to the dynamically created directory structure for client side display #}
         function GetDirectoryTree(container, data) {
             const ul = document.createElement('ul');
             for (const key of [Object.keys(data)[0]]) {

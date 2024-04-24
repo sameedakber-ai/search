@@ -1,203 +1,40 @@
 <div class="grid grid-cols-4">
 
-    {#  Document Management  #}
+    {#  Directory Management  #}
     <div class="col-span-1 px-4 justify-center h-[calc(100vh-120px)] overflow-y-auto">
+
         <div class="w-full pt-6">
 
-            <button class="w-full flex justify-between items-center text-md font-bold rounded-lg hover:bg-gray-700 p-1"
-                    onclick="requestFiles()">
-                <div class="flex items-center space-x-2">
-                    <div class="rounded-full">
-                        {% include "components/logo.html" %}
-                    </div>
-                    <div>
-                        New Directory
-                    </div>
-                </div>
-                <div>
-                    {% include "components/edit-icon.html" %}
-                </div>
-            </button>
+            {% include "components/upload-new-directory.html" %}
 
-            {#  Drag and Drop Container  #}
-            <div class="bg-black p-4 mt-1 rounded-md" hidden>
+            {% include "components/show-uploaded-directories.html" %}
 
-                <p>Drag and drop directory</p>
-                <p class="text-gray-400 text-xs">Limit 50 mb</p>
-                <p class="text-gray-400 text-xs">Supported file types: docx, pdf, txt, md</p>
+            {% include "components/change-similarity-threshold.html" %}
 
-
-                <form action="/" method="post" enctype="multipart/form-data"
-                      id="file-upload-form" class="mt-4">
-                    {% csrf_token %}
-
-                    <input class="text-sm" type="file" name="inpFile" id="inpFile"
-                           multiple webkitdirectory="true" directory="true">
-
-                    <button type="submit"
-                            class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2 flex space-x-2 items-center"
-                            id="upload-documents">
-                        <div class="font-bold">Upload</div>
-                        <div id="upload-spinner" class="hidden">{% include "components/loading.html" %}</div>
-                    </button>
-
-                </form>
-
-            </div>
-
-
-            {#  Show Newly Uploaded Directory in Directory List  #}
-            <form action="" method="post" unicorn:submit.prevent="refreshDirectories">
-                <button type="submit" class="bg-gray-700 text-sm py-2 px-3 rounded-md mt-2" id="process-new-directory"
-                        hidden></button>
-            </form>
-
-
-            {#  Directory List  #}
-            <div class="mt-8" id="directory-list">
-
-                {% if directories.today %}
-                    <div>
-                        <div class="font-light text-sm text-gray-400 mb-2">Today</div>
-                        {% for directory in directories.today %}
-                            {% include "components/directory.html" %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% if directories.yesterday %}
-                    <div class="mt-8">
-                        <div class="font-light text-sm text-gray-400 mb-2">Yesterday</div>
-                        {% for directory in directories.yesterday %}
-                            {% include "components/directory.html" %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                {% if directories.previous %}
-                    <div class="mt-8">
-                        <div class="font-light text-sm text-gray-400 mb-2">Previous</div>
-                        {% for directory in directories.previous %}
-                            {% include "components/directory.html" %}
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-            </div>
-
-            <div class="text-md font-bold rounded-lg p-1 fixed w-72 bottom-12 mb-3">
-                <div class="flex items-center justify-between">
-                    <div class="relative flex items-center max-w-[7rem]">
-                        <button type="button" id="decrement-button" unicorn:click.prevent="decrement"
-                                class="rotate-180 bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 hover:bg-gray-200 border border-gray-300 rounded-e-lg p-3 h-11 focus:ring-gray-100 dark:focus:ring-gray-700 focus:ring-2 focus:outline-none">
-                            {% include "components/increment-icon.html" %}
-                        </button>
-                        <input type="text" unicorn:model.defer="cutoff_score" id="cutoff_score" disabled
-                               class="bg-gray-50 border-x-0 border-gray-300 h-11 text-center text-gray-900 text-sm focus:ring-blue-500 focus:border-blue-500 block w-full py-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-                        <button type="button" id="increment-button" unicorn:click.prevent="increment"
-                                class="bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 dark:border-gray-600 hover:bg-gray-200 border border-gray-300 rounded-e-lg p-3 h-11 focus:ring-gray-100 dark:focus:ring-gray-700 focus:ring-2 focus:outline-none">
-                            {% include "components/decrement-icon.html" %}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <button class="text-md font-bold rounded-lg p-1 fixed w-24 bottom-4" unicorn:click.prevent="logout_user">
-                <div class="flex items-center space-x-2">
-                    <div class="rounded-full">
-                        {% include "components/logo.html" %}
-                    </div>
-                    <div>
-                        LOGOUT
-                    </div>
-                </div>
-            </button>
+            {% include "components/logout-user.html" %}
 
         </div>
     </div>
 
 
-    {#  Document Chat  #}
-    <div id="chat"
-         class="col-span-3 px-8 bg-black flex justify-center h-screen overflow-y-auto {% if not selected_directory.chat_history.chat_history %}items-center{% endif %}">
+    {#  Directory Chat  #}
+    <div id="chat" class="col-span-3 px-8 bg-black flex justify-center h-screen overflow-y-auto {% if not selected_directory.chat_history.chat_history %}items-center{% endif %}">
+
         <div class="relative w-full text-center">
 
-            {% if not selected_directory %}
-                {#  Document Chat Header  #}
-                <div class="flex justify-center">
-                    {% include "components/logo-large.html" %}
-                </div>
-                <h1 class="text-3xl font-bold mt-4">
-                    Chat with documents
-                </h1>
+            {% include "components/greeting-message.html" %}
 
-                {#  Database State Specific message #}
-                <p class="mt-2">
-                    {% if directories %}Select a directory from the list{% else %}No directories found. Upload new
-                        directory to begin{% endif %}
-                </p>
-            {% endif %}
-
-            {#  Conversation History  #}
             {% if selected_directory %}
-                {% if not selected_directory.chat_history.chat_history %}
-                    <div class="flex justify-center">
-                        {% include "components/logo-large.html" %}
-                    </div>
-                    <h1 class="text-3xl font-bold mt-4">
-                        Chatting with { {{ selected_directory.name }} }
-                    </h1>
-                    <p class="mt-2">Start a new chat</p>
-                {% endif %}
-                <div class="w-3/4 overflow-x-auto pt-10 mx-auto text-start pb-20 text-sm px-10 max-w-4xl"
-                     id="chat-history">
-                    {% for question,answer in selected_directory.chat_history.chat_history %}
-                        <div class="chat-history-item">
-                            <div class="font-bold flex space-x-1 items-center mb-2">
-                                <div>{% include "components/user-icon.html" %}</div>
-                                <div>You</div>
-                            </div>
-                            <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
-                                {{ question }}
-                            </div>
-                            <div class="font-bold flex space-x-1 items-center mb-2">
-                                <div>
-                                    {% include "components/logo.html" %}
-                                </div>
-                                <div>
-                                    Bot
-                                </div>
-                            </div>
-                            <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
-                                {{ answer|safe }}
-                            </div>
-                        </div>
-                    {% endfor %}
-                </div>
+
+                {% include "components/chat-history.html" %}
+
             {% endif %}
 
-            <div class="fixed bottom-6 left-3/4 w-1/2 transform -translate-x-3/4 rounded-lg">
-                <form action="" method="post" unicorn:submit.prevent="respond" class="max-w-4xl mx-auto">
-
-                    <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
-
-                        <input unicorn:model.defer="question" type="text" id="question-input"
-                               class="bg-transparent focus:outline-none w-full" placeholder="Message Bot ..."
-                               {% if not selected_directory %}disabled{% endif %}>
-
-                        <button type="submit" {% if not selected_directory %}disabled{% endif %} onclick="updateChat()">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
-                                 class="w-6 h-6">
-                                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z"/>
-                            </svg>
-                        </button>
-
-                    </div>
-
-                </form>
-            </div>
+            {% include "components/user-question-input.html" %}
 
         </div>
+
     </div>
+
 </div>
 

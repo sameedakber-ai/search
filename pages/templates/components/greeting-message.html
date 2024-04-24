@@ -1,0 +1,19 @@
+{% if not selected_directory %}
+
+    <div class="flex justify-center">
+        {% include "components/logo-large.html" %}
+    </div>
+
+    <h1 class="text-3xl font-bold mt-4">
+        Chat with documents
+    </h1>
+
+    <p class="mt-2">
+        {% if directories %}
+            Select a directory from the list
+        {% else %}
+            No directories found. Upload new directory to begin
+        {% endif %}
+    </p>
+
+{% endif %}

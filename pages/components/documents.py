@@ -1,4 +1,3 @@
-import json
 import shutil
 
 from django_unicorn.components import UnicornView
@@ -8,9 +7,8 @@ import os
 import re
 from dotenv import load_dotenv
 
-from langchain_community.document_loaders import UnstructuredMarkdownLoader, TextLoader, DirectoryLoader, PyPDFLoader, \
-    CSVLoader, Docx2txtLoader
-from langchain_text_splitters import MarkdownHeaderTextSplitter, MarkdownTextSplitter, RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import TextLoader, DirectoryLoader, PyPDFLoader, CSVLoader, Docx2txtLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
@@ -25,12 +23,12 @@ from django.shortcuts import redirect
 load_dotenv()
 
 loaders = {
-            '.pdf': PyPDFLoader,
-            '.md': TextLoader,
-            '.csv': CSVLoader,
-            '.txt': TextLoader,
-            '.docx': Docx2txtLoader
-        }
+    '.pdf': PyPDFLoader,
+    '.md': TextLoader,
+    '.txt': TextLoader,
+    '.docx': Docx2txtLoader
+}
+
 
 class DocumentsView(UnicornView):
     dir_path = ''
@@ -53,11 +51,13 @@ class DocumentsView(UnicornView):
         if not directories:
             return
         sorted_directories = defaultdict(list)
-        sorted_directories['today'].extend([directory for directory in directories if naturalday(directory.date) == 'today'])
-        sorted_directories['yesterday'].extend([directory for directory in directories if naturalday(directory.date) == 'yesterday'])
-        sorted_directories['previous'].extend([directory for directory in directories if not (directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
+        sorted_directories['today'].extend(
+            [directory for directory in directories if naturalday(directory.date) == 'today'])
+        sorted_directories['yesterday'].extend(
+            [directory for directory in directories if naturalday(directory.date) == 'yesterday'])
+        sorted_directories['previous'].extend([directory for directory in directories if not (
+                    directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
         self.directories = sorted_directories
-
 
     def mount(self):
         self.initialize_directory_data()
@@ -247,9 +247,9 @@ class DocumentsView(UnicornView):
 
         for i in range(len(scores) - 1):
             curr = scores[0]
-            next = scores[i+1]
+            next = scores[i + 1]
             best.append(documents[i])
-            if ((curr-next)/curr) >= 0.18:
+            if ((curr - next) / curr) >= 0.18:
                 break
 
         return best
@@ -258,7 +258,7 @@ class DocumentsView(UnicornView):
         cutoff_score = float(self.cutoff_score)
         if cutoff_score < 0.9:
             cutoff_score += 0.1
-        self.cutoff_score = round(cutoff_score,1)
+        self.cutoff_score = round(cutoff_score, 1)
         self.call('increment')
         self.initialize_directory_data()
 
@@ -266,9 +266,6 @@ class DocumentsView(UnicornView):
         cutoff_score = float(self.cutoff_score)
         if cutoff_score > 0.3:
             cutoff_score -= 0.1
-        self.cutoff_score = round(cutoff_score,1)
+        self.cutoff_score = round(cutoff_score, 1)
         self.call('decrement')
         self.initialize_directory_data()
-
-
-
