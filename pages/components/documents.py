@@ -196,7 +196,7 @@ class DocumentsView(UnicornView):
 
                 formatted_response = f"{llm_response}<div class='mt-4'>"
                 for source, score in zip(sources, scores):
-                    modified_source = "/".join(source.split(f"\\")[3:])
+                    modified_source = "/".join(source.split(f"\\")[4:])
                     request_source = "___".join(source.split(f"\\"))
                     formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
                 formatted_response += '</div>'
