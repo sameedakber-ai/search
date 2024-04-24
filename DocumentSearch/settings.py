@@ -38,12 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "django_unicorn",
     'pages',
-    'django_cleanup.apps.CleanupConfig',
     'storages',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -117,10 +117,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, "static"),
-)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static')
+]
+
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -129,21 +132,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = "media"
-
-DATA_UPLOAD_MAX_NUMBER_FILES = 1000
-
-AWS_ACCESS_KEY_ID = 'AKIAZI2LD53TVGLADD4P'
-AWS_SECRET_ACCESS_KEY = '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'
-
-AWS_STORAGE_BUCKET_NAME = 'sameedakber-ds-1'
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-AWS_S3_FILE_OVERWRITE = False
-
-# STORAGES = {
-#     "default": {
-#         "BACKEND": "storages.backends.s3boto3.S3StaticStorage"
-#     },
-#     "staticfiles": {
-#         "BACKEND": "storages.backends.s3boto3.S3StaticStorage"
-#     }
-# }
