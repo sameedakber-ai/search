@@ -1,14 +1,24 @@
 <!DOCTYPE html>
+
 {% load unicorn %}
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <title>{% block title %}{% endblock %}</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.8/dist/cdn.min.js"></script>
+
     <script src="https://code.jquery.com/jquery-3.7.1.js"
             integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         ::-webkit-scrollbar {
             width: 6px;
@@ -30,13 +40,21 @@
             background: #555;
         }
     </style>
+
     {% unicorn_scripts %}
+
 </head>
+
 <body>
-{% csrf_token %}
-{% block content %}
-{% endblock %}
-{% block scripts %}
-{% endblock %}
+
+    {% csrf_token %}
+
+    {% block content %}
+    {% endblock %}
+
+    {% block scripts %}
+    {% endblock %}
+
 </body>
+
 </html>

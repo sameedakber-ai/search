@@ -1,6 +1,6 @@
 <div class="grid grid-cols-4">
 
-    {#  Directory Management  #}
+
     <div class="col-span-1 px-4 justify-center h-[calc(100vh-120px)] overflow-y-auto">
 
         <div class="w-full pt-6">
@@ -11,13 +11,10 @@
 
             {% include "components/change-similarity-threshold.html" %}
 
-            {% include "components/logout-user.html" %}
-
         </div>
     </div>
 
 
-    {#  Directory Chat  #}
     <div id="chat" class="col-span-3 px-8 bg-black flex justify-center h-screen overflow-y-auto {% if not selected_directory.chat_history.chat_history %}items-center{% endif %}">
 
         <div class="relative w-full text-center">
