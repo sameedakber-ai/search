@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from pages.views import home_page, fetch_directory_tree, fetch_document
+from pages.views import home_page, fetch_directory_tree, fetch_document, upload_files
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +25,5 @@ urlpatterns = [
     path("unicorn/", include("django_unicorn.urls")),
     path('fetch_directory_tree/', fetch_directory_tree, name="fetch_directory_tree"),
     path('fetch_document/', fetch_document, name="fetch_document"),
+    path('upload_files/', upload_files)
 ]
