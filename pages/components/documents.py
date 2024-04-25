@@ -200,6 +200,7 @@ class DocumentsView(UnicornView):
 
                 self.call("scrollToBottom")
 
+        self.call('enableUserInput')
         self.question = ''
         self.initialize_directory_data()
 
