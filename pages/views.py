@@ -9,6 +9,7 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader, Docx2t
 
 
 def home_page(request, *args, **kwargs):
+
     return render(request, "home.html")
 
 
@@ -50,15 +51,22 @@ def upload_files(request):
 
 
 def fetch_directory_tree(request):
+
     directory_id = request.GET.get('directory_id')
+
     return JsonResponse({'directory': Directory.objects.filter(id=directory_id).get().structure})
 
 
 def fetch_document(request):
+
     path = request.GET.get('source')
+
     path = "\\".join(path.split('___'))
+
     extension = path.split('.')[-1]
+
     if os.path.exists(path):
+
         if extension == 'txt' or extension == 'md':
             loader = TextLoader(path)
         elif extension == 'pdf':
@@ -67,23 +75,33 @@ def fetch_document(request):
             loader = Docx2txtLoader(path)
         else:
             return JsonResponse({'document': '<p>UnSupported File Type</p>'})
+
         document = loader.load()
+
         return JsonResponse({'document': document[0].page_content})
+
     return JsonResponse(
+
         {'document': '<p>Document does not exist or is corrupted.<br> Please do a fresh directory upload</p>'})
 
 
 def make_name(name):
+
     used_names = [obj.name for obj in Directory.objects.all()]
+
     if name not in used_names:
         return name
+
     else:
+
         suffix = 1
         name_is_used = True
         new_name = name
+
         while (name_is_used):
             new_name = name + '_' + str(suffix)
             suffix += 1
             if new_name not in used_names:
                 name_is_used = False
+
         return new_name
