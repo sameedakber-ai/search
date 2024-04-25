@@ -6,7 +6,8 @@ from django.contrib.sessions.models import Session
 class Directory(models.Model):
     """Database table - directories"""
     name = models.CharField(max_length=128)
-    structure = models.JSONField(null=True)
+    key = models.CharField(max_length=128, unique=True, null=False)
+    structure = models.JSONField(null=True, default={})
     date = models.DateTimeField(default=datetime.now, blank=True)
     chat_history = models.JSONField(null=True, default={'chat_history': []})
 
