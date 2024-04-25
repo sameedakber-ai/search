@@ -82,8 +82,15 @@
             e.preventDefault();
 
             if ($('#inpFile').val()) {
+
+                disableUploadInput();
+
                 $(myForm).find('#upload-spinner').show();
+
                 const formData = new FormData();
+
+                const array = new Uint32Array(10);
+                const directoryKey = self.crypto.getRandomValues(array);
 
                 Array.from(inpFile.files).forEach(function (file, index) {
                     const newFilename = file.webkitRelativePath;
@@ -92,18 +99,24 @@
                     formData.append('file_' + index, newFile);
                 });
 
-                fetch('/', {
+                formData.append('key', directoryKey.slice(0,3))
+
+                fetch('upload_files/', {
+
                     method: 'POST',
                     body: formData,
                     headers: {
                         'X-CSRFToken': getCookie('csrftoken'),
                     }
+
                 })
                     .then(response => response.json())
+
                     .then(data => {
+
                         $('#process-new-directory').click();
-                        console.log($('.expand-directory-btn').length);
                         $('#inpFile').val('');
+
                     });
             }
         });
@@ -234,6 +247,12 @@
             $('#question-form').find('button').show();
             $('#response-loading').hide();
             $('#question-form').off('keypress');
+        }
+
+        function disableUploadInput() {
+            $('#directory-upload-icon').hide();
+            $('#directory-uploading').show();
+            $('#directory-uploading').closest('button').prop('disabled', true);
         }
 
     </script>
