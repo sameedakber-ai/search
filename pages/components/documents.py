@@ -29,42 +29,54 @@ loaders = {
 
 class DocumentsView(UnicornView):
     dir_path = ''
+
     directories = {}
+
     question = ''
+
     selected_directory = ''
+
     selected_vector_db_path = ''
+
     cutoff_score = 0.6
 
     def create_directory_loader(self, file_type, directory_path):
-        """Create separate directory loaders
-        for different file types"""
+
         return DirectoryLoader(
+
             path=directory_path,
             glob=f"**/*{file_type}",
             loader_cls=loaders[file_type],
             silent_errors=True
+
         )
 
     def initialize_directory_data(self):
+
         directories = Directory.objects.order_by('-date')
 
         if not directories:
             return
 
         sorted_directories = defaultdict(list)
+
         sorted_directories['today'].extend(
             [directory for directory in directories if naturalday(directory.date) == 'today'])
+
         sorted_directories['yesterday'].extend(
             [directory for directory in directories if naturalday(directory.date) == 'yesterday'])
+
         sorted_directories['previous'].extend([directory for directory in directories if not (
-                    directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
+                directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
 
         self.directories = sorted_directories
 
     def mount(self):
+
         self.initialize_directory_data()
 
     def load_documents(self, dir_path):
+
         pdf_loader = self.create_directory_loader('.pdf', dir_path)
         md_loader = self.create_directory_loader('.md', dir_path)
         txt_loader = self.create_directory_loader('.txt', dir_path)
@@ -84,34 +96,43 @@ class DocumentsView(UnicornView):
 
         return all_documents
 
-    def create_vector_db(self, documents, chroma_path = '', persist=True):
+    def create_vector_db(self, documents, chroma_path='', persist=True):
+
         db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
+
         if persist:
             db.persist()
 
     def get_vector_db(self, chroma_path):
+
         embedding_function = OpenAIEmbeddings()
+
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
+
         return db
 
     def get_k_relevant_documents(self, db, query, k):
+
         return db.similarity_search_with_relevance_scores(query, k)
 
     def split_document(self, documents):
+
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=2000,
             chunk_overlap=400
         )
+
         return text_splitter.create_documents(documents)
 
     def create_db(self):
+
         if not os.path.exists(self.selected_vector_db_path):
             documents = self.load_documents('media/directories/{}'.format(self.selected_directory.name))
+
             vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
 
     def get_recontextualized_question(self):
-        """Add context to user question
-        based on chat history"""
+
         contextualize_q_system_prompt = """Given a labeled chat history between you and the user, and the latest user question \
         which might reference the chat history, formulate a standalone question \
         which can be understood without the chat history. Do NOT answer the question, \
@@ -121,19 +142,24 @@ class DocumentsView(UnicornView):
         Chat History: {chat_history}
         Question: {question}
         """
+
         prompt_template = ChatPromptTemplate.from_template(contextualize_q_system_prompt)
+
         chat_history = ""
+
         for user, llm in self.selected_directory.chat_history['chat_history'][-3:]:
             chat_history += 'USER: {}\nYOU: {}\n\n'.format(user, llm)
-        prompt = prompt_template.format(chat_history=chat_history,
-                                        question=self.question)
+
+        prompt = prompt_template.format(chat_history=chat_history, question=self.question)
+
         model = ChatOpenAI()
+
         response_text = model.predict(prompt)
+
         return response_text
 
-    def get_llm_response(self, query, results, history):
-        """Feed the most relevant text
-        into LLM for response"""
+    def get_llm_response(self, query, results):
+
         PROMPT_TEMPLATE = """
             You are a tech assistant for an IT department. Answer the question based only on the following context:
             {context}
@@ -141,13 +167,19 @@ class DocumentsView(UnicornView):
             Answer the question based on the above context, and format your answer as a neat html code with tags included;
             keep the outermost tag a <div>; use tailwind css styling on all tags: {question}
             """
+
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+
         prompt = prompt_template.format(context=context_text, question=query)
 
         model = ChatOpenAI()
+
         response = model.predict(prompt)
+
         pattern = re.compile(r'\b(?:bg|text)-\w+\s*')
+
         response = re.sub(pattern, '', response)
 
         return response
@@ -184,9 +216,8 @@ class DocumentsView(UnicornView):
             if relevant_docs is None:
                 self.call('showNoRelevantDataMessage')
             else:
-                history = self.selected_directory.chat_history['chat_history']
 
-                llm_response = self.get_llm_response(query, relevant_chunks, history)
+                llm_response = self.get_llm_response(query, relevant_chunks)
 
                 formatted_response = f"{llm_response}<div class='mt-4'>"
                 for source, score in zip(sources, scores):
@@ -201,12 +232,12 @@ class DocumentsView(UnicornView):
                 self.call("scrollToBottom")
 
         self.call('enableUserInput')
+
         self.question = ''
+
         self.initialize_directory_data()
 
     def update_chat_selection(self, directory_id):
-        """Create new vector database when user processes uploaded files OR
-        Get existing embedding data from database"""
 
         self.selected_directory = Directory.objects.get(id=directory_id)
         self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embedding.name)
@@ -223,29 +254,42 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
     def delete(self, directory_id):
+
         dir_name = Directory.objects.get(id=directory_id).name
+
         Directory.objects.get(id=directory_id).delete()
+
         shutil.rmtree('media/chroma/{}'.format(dir_name))
+
         shutil.rmtree('media/directories/{}'.format(dir_name))
+
         self.selected_directory = ''
+
         self.selected_vector_db_path = ''
+
         self.initialize_directory_data()
 
     def logout_user(self):
+
         logout(self.request)
+
         return redirect('/')
 
     def sort_docs_by_relevance_scores(self, documents, cutoff_score):
-        """Relevance criteria for documents"""
+
         if len(documents) == 1:
             return documents
+
         scores = [round(_score, 2) for doc, _score in documents]
         scores.sort(reverse=True)
+
         best = []
+
         if scores[0] <= float(cutoff_score):
             return None
 
         for i in range(len(scores) - 1):
+
             curr = scores[0]
             next = scores[i + 1]
             best.append(documents[i])
@@ -255,19 +299,27 @@ class DocumentsView(UnicornView):
         return best
 
     def increment(self):
-        """Increase similarity threshold"""
+
         cutoff_score = float(self.cutoff_score)
+
         if cutoff_score < 0.9:
             cutoff_score += 0.1
+
         self.cutoff_score = round(cutoff_score, 1)
+
         self.call('increment')
+
         self.initialize_directory_data()
 
     def decrement(self):
-        """Decrease similarity threshold"""
+
         cutoff_score = float(self.cutoff_score)
+
         if cutoff_score > 0.3:
             cutoff_score -= 0.1
+
         self.cutoff_score = round(cutoff_score, 1)
+
         self.call('decrement')
+
         self.initialize_directory_data()
