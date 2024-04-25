@@ -16,15 +16,15 @@
                 Expand
             </button>
 
-            <button class="flex items-center space-x-2 {% if directory.embeddingdirectory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
+            <button class="flex items-center space-x-2 {% if directory.embedding.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
                     unicorn:click.prevent="update_chat_selection({{ directory.id }})"
                     id="process-document-{{ directory.id }}">
 
                 <div>
-                    {% if directory.embeddingdirectory.processed %}Chat{% else %}Process{% endif %}
+                    {% if directory.embedding.processed %}Chat{% else %}Process{% endif %}
                 </div>
 
-                {% if not directory.embeddingdirectory.processed %}
+                {% if not directory.embedding.processed %}
                     <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
                         {% include "components/loading.html" %}
                     </div>

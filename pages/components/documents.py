@@ -1,4 +1,4 @@
-from pages.models import DirectoryRoot
+from pages.models import Directory
 
 from django_unicorn.components import UnicornView
 from django.contrib.humanize.templatetags.humanize import naturalday
@@ -11,7 +11,7 @@ import shutil
 from dotenv import load_dotenv
 from collections import defaultdict
 
-from langchain_community.document_loaders import TextLoader, DirectoryLoader, PyPDFLoader, CSVLoader, Docx2txtLoader
+from langchain_community.document_loaders import TextLoader, DirectoryLoader, PyPDFLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -46,9 +46,11 @@ class DocumentsView(UnicornView):
         )
 
     def initialize_directory_data(self):
-        directories = DirectoryRoot.objects.filter(user_id=self.request.user.id).order_by('-date')
+        directories = Directory.objects.order_by('-date')
+
         if not directories:
             return
+
         sorted_directories = defaultdict(list)
         sorted_directories['today'].extend(
             [directory for directory in directories if naturalday(directory.date) == 'today'])
@@ -56,25 +58,24 @@ class DocumentsView(UnicornView):
             [directory for directory in directories if naturalday(directory.date) == 'yesterday'])
         sorted_directories['previous'].extend([directory for directory in directories if not (
                     directory in sorted_directories['today'] or directory in sorted_directories['yesterday'])])
+
         self.directories = sorted_directories
 
     def mount(self):
         self.initialize_directory_data()
 
     def load_documents(self, dir_path):
-        """Load and combine documents from
-        different (file type) directory loaders"""
         pdf_loader = self.create_directory_loader('.pdf', dir_path)
         md_loader = self.create_directory_loader('.md', dir_path)
         txt_loader = self.create_directory_loader('.txt', dir_path)
         docx_loader = self.create_directory_loader('.docx', dir_path)
 
-        all_documents = []
-
         pdf_documents = pdf_loader.load()
         md_documents = md_loader.load()
         txt_documents = txt_loader.load()
         docx_documents = docx_loader.load()
+
+        all_documents = []
 
         all_documents.extend(pdf_documents)
         all_documents.extend(md_documents)
@@ -84,24 +85,19 @@ class DocumentsView(UnicornView):
         return all_documents
 
     def create_vector_db(self, documents, chroma_path = '', persist=True):
-        """Create and store vector database"""
         db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
         if persist:
             db.persist()
 
     def get_vector_db(self, chroma_path):
-        """Get stored vector database"""
         embedding_function = OpenAIEmbeddings()
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
         return db
 
     def get_k_relevant_documents(self, db, query, k):
-        """Do a vector similarity search
-        to extract relevant documents"""
         return db.similarity_search_with_relevance_scores(query, k)
 
     def split_document(self, documents):
-        """Split a document into chunks"""
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=2000,
             chunk_overlap=400
@@ -109,10 +105,8 @@ class DocumentsView(UnicornView):
         return text_splitter.create_documents(documents)
 
     def create_db(self):
-        """Create and persist vector
-        database if it does not exist"""
         if not os.path.exists(self.selected_vector_db_path):
-            documents = self.load_documents('media/{}/directories/{}'.format(self.request.user.id, self.selected_directory.name))
+            documents = self.load_documents('media/directories/{}'.format(self.selected_directory.name))
             vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
 
     def get_recontextualized_question(self):
@@ -161,7 +155,7 @@ class DocumentsView(UnicornView):
     def respond(self):
 
         if isinstance(self.selected_directory, dict):
-            self.selected_directory = DirectoryRoot.objects.filter(name=self.selected_directory['name']).first()
+            self.selected_directory = Directory.objects.filter(name=self.selected_directory['name']).first()
 
         query = self.get_recontextualized_question()
 
@@ -210,17 +204,17 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
     def update_chat_selection(self, directory_id):
-        """Create new vector database when user processes uploaded documents OR
-        Get existing database"""
-        self.selected_directory = DirectoryRoot.objects.get(id=directory_id)
-        self.selected_vector_db_path = 'media/{}/chroma/{}'.format(self.request.user.id,
-                                                                   self.selected_directory.embeddingdirectory.name)
+        """Create new vector database when user processes uploaded files OR
+        Get existing embedding data from database"""
+
+        self.selected_directory = Directory.objects.get(id=directory_id)
+        self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embedding.name)
 
         self.create_db()
         self.initialize_directory_data()
 
-        self.selected_directory.embeddingdirectory.processed = True
-        self.selected_directory.embeddingdirectory.save()
+        self.selected_directory.embedding.processed = True
+        self.selected_directory.embedding.save()
 
         self.call("scrollToBottom")
 
@@ -228,10 +222,10 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
     def delete(self, directory_id):
-        dir_name = DirectoryRoot.objects.get(id=directory_id).name
-        DirectoryRoot.objects.get(id=directory_id).delete()
-        shutil.rmtree('media/{}/chroma/{}'.format(self.request.user.id, dir_name))
-        shutil.rmtree('media/{}/directories/{}'.format(self.request.user.id, dir_name))
+        dir_name = Directory.objects.get(id=directory_id).name
+        Directory.objects.get(id=directory_id).delete()
+        shutil.rmtree('media/chroma/{}'.format(dir_name))
+        shutil.rmtree('media/directories/{}'.format(dir_name))
         self.selected_directory = ''
         self.selected_vector_db_path = ''
         self.initialize_directory_data()
