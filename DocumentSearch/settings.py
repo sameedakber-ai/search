@@ -107,7 +107,7 @@ CSRF_TRUSTED_ORIGINS = ["https://doc-search-cd06661b1976.herokuapp.com", 'http:/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'EST'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
