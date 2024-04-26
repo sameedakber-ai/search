@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/80637bd7-558d-4288-ace4-22757ca80143/resourceGroups/doc-search/providers/Microsoft.Web/sites/tenthline-doc-search",
+    "appService.deploySubpath": "."
+}
