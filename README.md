@@ -4,3 +4,4 @@
 3. SERVER_NAME=<azure_postgreSQL_server_name>
 4. APP_name=<azure_app_domain>
 5. DJANGO_DEVELOPMENT=false
+6. OPENAI_API_KEY=<openai_api_key>
