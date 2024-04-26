@@ -82,7 +82,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = ["https://tenthline-doc-search.azurewebsites.net"]
+CSRF_TRUSTED_ORIGINS = ["https://" + os.getenv('APP_NAME')]
 
 LANGUAGE_CODE = 'en-us'
 
@@ -106,7 +106,7 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-AZURE_CONNECTION_STRING = 'DefaultEndpointsProtocol=https;AccountName=tenthlinestorage;AccountKey=t4tHvPaAjWU+z1/wpNvmsbY2jQLlqKSxaIcgshdARL6lHXOL+evL3DL/38uH7Afc76i7h5+cGC+x+AStXqkN4g==;EndpointSuffix=core.windows.net'
+AZURE_CONNECTION_STRING = os.getenv('AZURE_CONNECTION_STRING')
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 100000
 
