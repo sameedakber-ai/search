@@ -13,6 +13,9 @@ DATABASES = {
     }
 }
 
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
-MEDIA_ROOT = "media"
+CSRF_TRUSTED_ORIGINS = ["https://127.0.0.1"]

@@ -82,7 +82,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = ["https://" + os.getenv('APP_NAME')]
+CSRF_TRUSTED_ORIGINS = ["https://tenthline-doc-search.azurewebsites.net"]
 
 LANGUAGE_CODE = 'en-us'
 
@@ -99,23 +99,19 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
-
 STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.azure_storage.AzureStorage",
-    },
+    "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
 AZURE_CONNECTION_STRING = 'DefaultEndpointsProtocol=https;AccountName=tenthlinestorage;AccountKey=t4tHvPaAjWU+z1/wpNvmsbY2jQLlqKSxaIcgshdARL6lHXOL+evL3DL/38uH7Afc76i7h5+cGC+x+AStXqkN4g==;EndpointSuffix=core.windows.net'
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 100000
 
-MEDIA_ROOT = "media"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
     from .settings_dev import *
