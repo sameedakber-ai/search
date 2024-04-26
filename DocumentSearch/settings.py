@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "django_unicorn",
     'pages',
+    "storages"
 ]
 
 MIDDLEWARE = [
@@ -102,9 +103,19 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MEDIA_ROOT = "media"
+DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "storages.backends.azure_storage.AzureStorage",
+    },
+}
+
+AZURE_CONNECTION_STRING = 'DefaultEndpointsProtocol=https;AccountName=tenthlinestorage;AccountKey=t4tHvPaAjWU+z1/wpNvmsbY2jQLlqKSxaIcgshdARL6lHXOL+evL3DL/38uH7Afc76i7h5+cGC+x+AStXqkN4g==;EndpointSuffix=core.windows.net'
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 100000
+
+MEDIA_ROOT = "media"
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
     from .settings_dev import *
