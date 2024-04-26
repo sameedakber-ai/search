@@ -1,30 +1,36 @@
 <div class="mt-8" id="directory-list">
 
     {% if directories.today %}
+
         <div>
             <div class="font-light text-sm text-gray-400 mb-2">Today</div>
             {% for directory in directories.today %}
                 {% include "components/directory.html" %}
             {% endfor %}
         </div>
+
     {% endif %}
 
     {% if directories.yesterday %}
+
         <div class="mt-8">
             <div class="font-light text-sm text-gray-400 mb-2">Yesterday</div>
             {% for directory in directories.yesterday %}
                 {% include "components/directory.html" %}
             {% endfor %}
         </div>
+
     {% endif %}
 
     {% if directories.previous %}
+
         <div class="mt-8">
             <div class="font-light text-sm text-gray-400 mb-2">Previous</div>
             {% for directory in directories.previous %}
                 {% include "components/directory.html" %}
             {% endfor %}
         </div>
+
     {% endif %}
 
 </div>

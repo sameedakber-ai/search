@@ -1,11 +1,15 @@
 {% if not selected_directory.chat_history.chat_history %}
 
     <div class="flex justify-center">
+
         {% include "components/logo-large.html" %}
+
     </div>
 
     <h1 class="text-3xl font-bold mt-4">
+
         Chatting with { {{ selected_directory.name }} }
+
     </h1>
 
     <p class="mt-2">Start a new chat</p>
@@ -19,25 +23,36 @@
         <div class="chat-history-item">
 
             <div class="font-bold flex space-x-1 items-center mb-2">
+
                 <div>{% include "components/user-icon.html" %}</div>
+
                 <div>You</div>
             </div>
 
             <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
+
                 {{ question }}
+
             </div>
 
             <div class="font-bold flex space-x-1 items-center mb-2">
+
                 <div>
+
                     {% include "components/logo.html" %}
+
                 </div>
+
                 <div>
                     Bot
                 </div>
+
             </div>
 
             <div class="bg-gray-700 text-white rounded-md p-3 mb-8">
+
                 {{ answer|safe }}
+
             </div>
 
         </div>
