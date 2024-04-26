@@ -81,7 +81,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = ["https://doc-search-cd06661b1976.herokuapp.com", 'http://127.0.0.1:8000']
+CSRF_TRUSTED_ORIGINS = [os.getenv('APP_NAME')]
 
 LANGUAGE_CODE = 'en-us'
 
@@ -102,10 +102,10 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = "media"
 
-DATA_UPLOAD_MAX_NUMBER_FILES = 50000
+DATA_UPLOAD_MAX_NUMBER_FILES = 100000
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
     from .settings_dev import *
