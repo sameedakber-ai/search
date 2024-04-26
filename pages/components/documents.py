@@ -28,6 +28,7 @@ loaders = {
 
 
 class DocumentsView(UnicornView):
+
     dir_path = ''
 
     directories = {}
@@ -118,8 +119,9 @@ class DocumentsView(UnicornView):
     def split_document(self, documents):
 
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=2000,
-            chunk_overlap=400
+            model_name="gpt-3.5-turbo",
+            chunk_size=1000,
+            chunk_overlap=200
         )
 
         return text_splitter.create_documents(documents)
@@ -170,6 +172,8 @@ class DocumentsView(UnicornView):
 
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
 
+        print("Total number of tokens in context: ", len(context_text)/3) # Each token is approximately 3 characters (from openai documentation)
+
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
         prompt = prompt_template.format(context=context_text, question=query)
@@ -191,33 +195,37 @@ class DocumentsView(UnicornView):
 
         query = self.get_recontextualized_question()
 
-        db = self.get_vector_db(self.selected_vector_db_path)
+        vector_db_from_all_files = self.get_vector_db(self.selected_vector_db_path)
 
-        docs = self.get_k_relevant_documents(db, query, k=3)
+        files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=3)
 
-        relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
+        relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score)
 
-        if relevant_docs is None:
+        if relevant_files is None:
             self.call('showNoRelevantDataMessage')
         else:
-            print('Total number of relevant chunks: ', len(relevant_docs))
+            print('Total number of relevant files: ', len(relevant_files))
 
-            sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
-            scores = [round(_score, 2) for doc, _score in relevant_docs]
+            sources = [doc.metadata.get('source', None) for doc, _score in relevant_files]
+            scores = [round(_score, 2) for doc, _score in relevant_files]
 
-            chunks = []
-            for doc in relevant_docs:
-                chunks.extend(self.split_document([doc[0].page_content]))
+            text_chunks = []
+            for file in relevant_files:
+                text_chunks.extend(self.split_document([file[0].page_content]))
 
-            relevant_chunks = self.get_k_relevant_documents(db, query, k=5)
+            vector_db_from_relevant_chunks_only = Chroma.from_documents(documents=text_chunks, embedding=OpenAIEmbeddings(), persist_directory='')
 
-            relevant_chunks = self.sort_docs_by_relevance_scores(relevant_chunks, self.cutoff_score)
+            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=5)
 
-            if relevant_docs is None:
+            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score)
+
+            if relevant_text_chunks_based_on_criteria is None:
                 self.call('showNoRelevantDataMessage')
             else:
 
-                llm_response = self.get_llm_response(query, relevant_chunks)
+                print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
+
+                llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
                 formatted_response = f"{llm_response}<div class='mt-4'>"
                 for source, score in zip(sources, scores):
@@ -227,6 +235,7 @@ class DocumentsView(UnicornView):
                 formatted_response += '</div>'
 
                 self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
+
                 self.selected_directory.save()
 
                 self.call("scrollToBottom")
@@ -293,7 +302,7 @@ class DocumentsView(UnicornView):
             curr = scores[0]
             next = scores[i + 1]
             best.append(documents[i])
-            if ((curr - next) / curr) >= 0.18:
+            if ((curr - next) / curr) >= 0.15:
                 break
 
         return best
