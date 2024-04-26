@@ -100,7 +100,6 @@ STATICFILES_DIRS = [
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
@@ -108,5 +107,5 @@ MEDIA_ROOT = "media"
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 50000
 
-if os.getenv('DJANGO_DEVELOPMENT') == 'true':
-    from settings_dev import *
+if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
+    from .settings_dev import *
