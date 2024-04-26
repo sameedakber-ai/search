@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 from pages.views import home_page, fetch_directory_tree, fetch_document, upload_files
 
@@ -26,4 +28,4 @@ urlpatterns = [
     path('fetch_directory_tree/', fetch_directory_tree, name="fetch_directory_tree"),
     path('fetch_document/', fetch_document, name="fetch_document"),
     path('upload_files/', upload_files)
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
