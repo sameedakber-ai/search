@@ -19,6 +19,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+
+
     <style>
         ::-webkit-scrollbar {
             width: 6px;
@@ -47,13 +50,13 @@
 
 <body>
 
-    {% csrf_token %}
+{% csrf_token %}
 
-    {% block content %}
-    {% endblock %}
+{% block content %}
+{% endblock %}
 
-    {% block scripts %}
-    {% endblock %}
+{% block scripts %}
+{% endblock %}
 
 </body>
 
