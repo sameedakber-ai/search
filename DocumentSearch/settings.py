@@ -11,6 +11,7 @@ DEBUG = False
 ALLOWED_HOSTS = [os.getenv('APP_NAME')]
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -19,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "django_unicorn",
     'pages',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -106,6 +108,14 @@ DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = "media"
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 50000
+
+ASGI_APPLICATION = 'DocumentSearch.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
     from .settings_dev import *
