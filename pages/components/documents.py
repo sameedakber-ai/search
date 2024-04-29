@@ -1,13 +1,10 @@
-from pages.models import Directory
+from pages.models import Directory, File
 
 from django_unicorn.components import UnicornView
 from django.contrib.humanize.templatetags.humanize import naturalday
-from django.contrib.auth import logout
-from django.shortcuts import redirect
 
 import os
 import re
-import shutil
 from dotenv import load_dotenv
 from collections import defaultdict
 
@@ -17,13 +14,18 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+import math
+
 load_dotenv()
 
 loaders = {
-    '.pdf': PyPDFLoader,
-    '.md': TextLoader,
-    '.txt': TextLoader,
-    '.docx': Docx2txtLoader
+    'pdf': PyPDFLoader,
+    'md': TextLoader,
+    'txt': TextLoader,
+    'docx': Docx2txtLoader
 }
 
 
@@ -36,20 +38,8 @@ class DocumentsView(UnicornView):
 
     selected_directory = ''
 
-    selected_vector_db_path = ''
-
     cutoff_score = 0.6
 
-    def create_directory_loader(self, file_type, directory_path):
-
-        return DirectoryLoader(
-
-            path=directory_path,
-            glob=f"**/*{file_type}",
-            loader_cls=loaders[file_type],
-            silent_errors=True
-
-        )
 
     def initialize_directory_data(self):
 
@@ -75,32 +65,43 @@ class DocumentsView(UnicornView):
 
         self.initialize_directory_data()
 
-    def load_documents(self, dir_path):
+    def load_file(self, file_path):
 
-        pdf_loader = self.create_directory_loader('.pdf', dir_path)
-        md_loader = self.create_directory_loader('.md', dir_path)
-        txt_loader = self.create_directory_loader('.txt', dir_path)
-        docx_loader = self.create_directory_loader('.docx', dir_path)
+        extension = os.path.splitext(file_path)[1].lstrip('.').lower()
 
-        pdf_documents = pdf_loader.load()
-        md_documents = md_loader.load()
-        txt_documents = txt_loader.load()
-        docx_documents = docx_loader.load()
+        document = ''
 
-        all_documents = []
+        try:
 
-        all_documents.extend(pdf_documents)
-        all_documents.extend(md_documents)
-        all_documents.extend(txt_documents)
-        all_documents.extend(docx_documents)
+            loader = loaders[extension]
 
-        return all_documents
+        except KeyError:
+
+            print("Unknown file extension ... skipping file")
+
+        else:
+
+            try:
+
+                document = loader(file_path).load()
+
+            except FileNotFoundError:
+
+                print("File not found ... skipping file")
+
+            except RuntimeError:
+
+                print("Can not read file ... skipping file")
+
+        return document
+
 
     def create_vector_db(self, documents, chroma_path='', persist=True):
 
         db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
 
         if persist:
+
             db.persist()
 
     def get_vector_db(self, chroma_path):
@@ -118,18 +119,79 @@ class DocumentsView(UnicornView):
     def split_document(self, documents):
 
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=2000,
-            chunk_overlap=400
+
+            chunk_size=1000,
+            chunk_overlap=200
+
         )
 
         return text_splitter.create_documents(documents)
 
-    def create_db(self):
+    def create_db(self, directory):
 
-        if not os.path.exists(self.selected_vector_db_path):
-            documents = self.load_documents('media/directories/{}'.format(self.selected_directory.name))
+        vector_db_path = "media/embeddings/{}".format(directory.name)
 
-            vector_db = self.create_vector_db(documents, self.selected_vector_db_path)
+        if not directory.processed:
+
+            channel_layer = get_channel_layer()
+
+            files = File.objects.filter(directory=directory, processed=False).all()
+
+            async_to_sync(channel_layer.group_send)(
+
+                "upload",
+                {
+                    "type": "send_process_message",
+                    "id": directory.id,
+                    "uploaded": "0 / {0}".format(len(files)),
+                    "progress": '<p>|<span class="text-gray-400">' + "=" * 10 + '|</span></p>',
+                }
+
+            )
+
+            file_batch_size = int(math.ceil(len(files) / 5))
+
+            file_batches = [files[i:i + file_batch_size] for i in range(0, len(files), file_batch_size)]
+
+            unsuccessful_file_load_count = 0
+
+            for i, file_batch in enumerate(file_batches):
+
+                loaded_file_batch = [self.load_file('media/{}'.format(file.file)) for file in file_batch]
+
+                loaded_file_batch = [file[0] for file in loaded_file_batch if file]
+
+                unsuccessful_file_load_count += len(file_batch) - len(loaded_file_batch)
+
+                if loaded_file_batch:
+
+                    vector_db = self.create_vector_db(loaded_file_batch, vector_db_path)
+
+                for file in file_batch:
+                    file.processed = True
+                    file.save()
+
+                current_progress = int(math.ceil((i + 1) * 10 * file_batch_size / len(files)))
+
+                async_to_sync(channel_layer.group_send)(
+
+                    "upload",
+                    {
+                        "type": "send_process_message",
+                        "id": directory.id,
+                        "uploaded": "{0} / {1}".format((i + 1) * file_batch_size, len(files)),
+                        "progress": '<p>|' + "=" * current_progress + '<span class="text-gray-400">' + "=" * (10 - current_progress) + '|</span></p>',
+                    }
+
+                )
+
+            print("Unsuccessful file load count: ", unsuccessful_file_load_count)
+
+            if File.objects.filter(directory=directory, processed=True).count() == File.objects.filter(directory=directory).count():
+                directory.processed = True
+                directory.save()
+
+
 
     def get_recontextualized_question(self):
 
@@ -170,6 +232,9 @@ class DocumentsView(UnicornView):
 
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
 
+        print("Total number of tokens in context: ",
+              len(context_text) / 3)  # Each token is approximately 3 characters (from openai documentation)
+
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
         prompt = prompt_template.format(context=context_text, question=query)
@@ -189,49 +254,59 @@ class DocumentsView(UnicornView):
         if isinstance(self.selected_directory, dict):
             self.selected_directory = Directory.objects.filter(name=self.selected_directory['name']).first()
 
+        directory = self.selected_directory
+
+        vector_db_path = 'media/embeddings/{}'.format(directory.name)
+
         query = self.get_recontextualized_question()
 
-        db = self.get_vector_db(self.selected_vector_db_path)
+        vector_db_from_all_files = self.get_vector_db(vector_db_path)
 
-        docs = self.get_k_relevant_documents(db, query, k=3)
+        files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=3)
 
-        relevant_docs = self.sort_docs_by_relevance_scores(docs, self.cutoff_score)
+        relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score)
 
-        if relevant_docs is None:
+        if relevant_files is None:
             self.call('showNoRelevantDataMessage')
         else:
-            print('Total number of relevant chunks: ', len(relevant_docs))
+            print('Total number of relevant files: ', len(relevant_files))
 
-            sources = [doc.metadata.get('source', None) for doc, _score in relevant_docs]
-            scores = [round(_score, 2) for doc, _score in relevant_docs]
+            sources = [doc.metadata.get('source', None) for doc, _score in relevant_files]
+            scores = [round(_score, 2) for doc, _score in relevant_files]
 
-            chunks = []
-            for doc in relevant_docs:
-                chunks.extend(self.split_document([doc[0].page_content]))
+            text_chunks = []
+            for file in relevant_files:
+                text_chunks.extend(self.split_document([file[0].page_content]))
 
-            relevant_chunks = self.get_k_relevant_documents(db, query, k=5)
+            vector_db_from_relevant_chunks_only = Chroma.from_documents(documents=text_chunks,
+                                                                        embedding=OpenAIEmbeddings(),
+                                                                        persist_directory='')
 
-            relevant_chunks = self.sort_docs_by_relevance_scores(relevant_chunks, self.cutoff_score)
+            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=5)
 
-            if relevant_docs is None:
+            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks,
+                                                                                        self.cutoff_score)
+
+            if relevant_text_chunks_based_on_criteria is None:
                 self.call('showNoRelevantDataMessage')
             else:
 
-                llm_response = self.get_llm_response(query, relevant_chunks)
+                print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
+
+                llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
                 formatted_response = f"{llm_response}<div class='mt-4'>"
                 for source, score in zip(sources, scores):
-                    modified_source = "/".join(source.split(f"\\")[3:])
+                    modified_source = source.split(f"/")[-1]
                     request_source = "___".join(source.split(f"\\"))
                     formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
                 formatted_response += '</div>'
 
-                self.selected_directory.chat_history['chat_history'].append([self.question, formatted_response])
-                self.selected_directory.save()
+                directory.chat_history['chat_history'].append([self.question, formatted_response])
+
+                directory.save()
 
                 self.call("scrollToBottom")
-
-        self.call('enableUserInput')
 
         self.question = ''
 
@@ -239,41 +314,20 @@ class DocumentsView(UnicornView):
 
     def update_chat_selection(self, directory_id):
 
-        self.selected_directory = Directory.objects.get(id=directory_id)
-        self.selected_vector_db_path = 'media/chroma/{}'.format(self.selected_directory.embedding.name)
+        directory = Directory.objects.get(id=directory_id)
 
-        self.create_db()
-        self.initialize_directory_data()
+        if directory.processed:
 
-        self.selected_directory.embedding.processed = True
-        self.selected_directory.embedding.save()
+            self.selected_directory = directory
 
-        self.call("scrollToBottom")
+            self.call("scrollToBottom")
 
-    def refreshDirectories(self):
-        self.initialize_directory_data()
+        else:
 
-    def delete(self, directory_id):
-
-        dir_name = Directory.objects.get(id=directory_id).name
-
-        Directory.objects.get(id=directory_id).delete()
-
-        shutil.rmtree('media/chroma/{}'.format(dir_name))
-
-        shutil.rmtree('media/directories/{}'.format(dir_name))
-
-        self.selected_directory = ''
-
-        self.selected_vector_db_path = ''
+            self.create_db(directory)
 
         self.initialize_directory_data()
 
-    def logout_user(self):
-
-        logout(self.request)
-
-        return redirect('/')
 
     def sort_docs_by_relevance_scores(self, documents, cutoff_score):
 
@@ -293,7 +347,7 @@ class DocumentsView(UnicornView):
             curr = scores[0]
             next = scores[i + 1]
             best.append(documents[i])
-            if ((curr - next) / curr) >= 0.18:
+            if ((curr - next) / curr) >= 0.15:
                 break
 
         return best

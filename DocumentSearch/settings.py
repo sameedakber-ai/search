@@ -19,7 +19,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "django_unicorn",
     'pages',
-    "storages"
 ]
 
 MIDDLEWARE = [
@@ -82,7 +81,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = [os.getenv('APP_NAME')]
+CSRF_TRUSTED_ORIGINS = ["https://doc-search-cd06661b1976.herokuapp.com", 'http://127.0.0.1:8000']
 
 LANGUAGE_CODE = 'en-us'
 
@@ -99,19 +98,14 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-STORAGES = {
-    "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
-}
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+MEDIA_ROOT = "media"
 
-AZURE_CONNECTION_STRING = os.getenv('AZURE_CONNECTION_STRING')
-
-DATA_UPLOAD_MAX_NUMBER_FILES = 100000
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+DATA_UPLOAD_MAX_NUMBER_FILES = 50000
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
     from .settings_dev import *

@@ -1,4 +1,4 @@
-<div class="directory bg-gray-900 text-sm rounded-md py-4 px-3 mb-3">
+<div class="directory bg-gray-900 text-sm rounded-md py-4 px-3 mb-3 {% if directory.id == selected_directory.id %}border-2 border-gray-600{% endif %}">
 
     <div class="flex justify-between">
 
@@ -16,34 +16,32 @@
                 Expand
             </button>
 
-            <button class="flex items-center space-x-2 {% if directory.embedding.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
-                    unicorn:click.prevent="update_chat_selection({{ directory.id }})"
+            <button class="flex items-center space-x-2 {% if directory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
+                    unicorn:click.prevent="update_chat_selection({{ directory.id }})" {% if not directory.processed %}onclick="disable(this)"{% endif %}
                     id="process-document-{{ directory.id }}">
 
                 <div>
-                    {% if directory.embedding.processed %}Chat{% else %}Process{% endif %}
+                    {% if directory.processed %}Chat{% else %}Process{% endif %}
                 </div>
 
-                {% if not directory.embedding.processed %}
+                {% if not directory.processed %}
                     <div unicorn:loading unicorn:target="process-document-{{ directory.id }}">
                         {% include "components/loading.html" %}
                     </div>
                 {% endif %}
 
-            </button>
 
-            {#                                <button class="text-sm ps-1 rounded md"#}
-            {#                                        unicorn:click.prevent="delete({{ directory.id }})">#}
-            {#                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"#}
-            {#                                         stroke-width="1.5" stroke="currentColor" class="w-4 h-4">#}
-            {#                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>#}
-            {#                                    </svg>#}
-            {##}
-            {#                                </button>#}
+            </button>
 
         </div>
 
     </div>
+
+
+    <div class="w-full text-emerald-600 flex justify-between font-bold text-sm" id="process-notification-{{ directory.id }}">
+
+    </div>
+
 
     <div class="overflow-x-visible show-uploaded-directory collapsed"
          data-directory="{{ directory.id }}">

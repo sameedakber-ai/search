@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 
 {% load unicorn %}
+{% load django_htmx %}
 
 <html lang="en">
 
@@ -18,6 +19,11 @@
             integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+
 
     <style>
         ::-webkit-scrollbar {
@@ -45,15 +51,15 @@
 
 </head>
 
-<body>
+<body hx-ext="ws" ws-connect="/ws/notifications/">
 
-    {% csrf_token %}
+{% csrf_token %}
 
-    {% block content %}
-    {% endblock %}
+{% block content %}
+{% endblock %}
 
-    {% block scripts %}
-    {% endblock %}
+{% block scripts %}
+{% endblock %}
 
 </body>
 

@@ -2,6 +2,9 @@ from django.db import models
 from datetime import datetime
 from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session
+from django.conf import settings
+from django.db.models import Q
+
 
 class Directory(models.Model):
     """Database table - directories"""
@@ -10,6 +13,8 @@ class Directory(models.Model):
     structure = models.JSONField(null=True, default={})
     date = models.DateTimeField(default=datetime.now, blank=True)
     chat_history = models.JSONField(null=True, default={'chat_history': []})
+    processed = models.BooleanField(default=False)
+
 
 def get_upload_path(instance, filename):
     """Set storage path for files"""
@@ -19,14 +24,9 @@ def get_upload_path(instance, filename):
     file_path = 'directories/{0}'.format(path)
     return file_path
 
+
 class File(models.Model):
     """Database table - files"""
     file = models.FileField(upload_to=get_upload_path)
-    directory = models.ForeignKey(Directory, on_delete=models.CASCADE)
-
-class Embedding(models.Model):
-    """Database table - embeddings"""
-    name = models.CharField(max_length=128)
-    directory = models.OneToOneField(Directory, on_delete=models.CASCADE)
     processed = models.BooleanField(default=False)
-
+    directory = models.ForeignKey(Directory, on_delete=models.CASCADE)
