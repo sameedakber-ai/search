@@ -1,9 +1,16 @@
+import json
+import math
 import os.path
 
 from django.shortcuts import render
 from collections import defaultdict
 from django.http import JsonResponse
-from pages.models import Directory, File, Embedding
+from pages.models import Directory, File
+
+from .consumers import UploadProgressConsumer
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.http import HttpResponse
 
 from langchain_community.document_loaders import TextLoader, PyPDFLoader, Docx2txtLoader
 
@@ -19,15 +26,18 @@ def upload_files(request):
 
         if request.FILES:
 
+            channel_layer = get_channel_layer()
+
             directory_key = "".join(request.POST['key'].split(','))
 
-            directory = Directory.objects.create(name=make_name(request.FILES['file_0'].name.split('___')[0]), key=directory_key)
+            directory = Directory.objects.create(name=make_name(request.POST['directory_name']),
+                                                 key=directory_key)
 
             directory_structure = defaultdict(list)
 
-            for i in range(len(request.FILES)):
+            for j in range(len(request.FILES)):
 
-                file = request.FILES['file_{}'.format(i)]
+                file = request.FILES['file_{}'.format(j)]
 
                 path = file.name.split('___')
 
@@ -37,13 +47,24 @@ def upload_files(request):
                         directory_structure[curr].append(next)
                     i += 1
 
-                File.objects.create(file=file,directory=directory)
+                current_progress = int(math.ceil((j+1)*10/len(request.FILES)))
+
+                File.objects.create(file=file, directory=directory)
+
+                async_to_sync(channel_layer.group_send)(
+
+                    "upload",
+                    {
+                        "type": "send_message",
+                        "uploaded": "{0} / {1}".format(j + 1, len(request.FILES)),
+                        "progress": '<p>|' + "=" * current_progress + '<span class="text-gray-400">' + "=" * (
+                                    10 - current_progress) + '|</span></p>',
+                    }
+                )
 
             directory.structure = directory_structure
 
             directory.save()
-
-            embeddings = Embedding.objects.create(name=directory.name, directory=directory)
 
             return JsonResponse({'message': 'success!'})
 
@@ -51,14 +72,12 @@ def upload_files(request):
 
 
 def fetch_directory_tree(request):
-
     directory_id = request.GET.get('directory_id')
 
     return JsonResponse({'directory': Directory.objects.filter(id=directory_id).get().structure})
 
 
 def fetch_document(request):
-
     path = request.GET.get('source')
 
     path = "\\".join(path.split('___'))
@@ -86,7 +105,6 @@ def fetch_document(request):
 
 
 def make_name(name):
-
     used_names = [obj.name for obj in Directory.objects.all()]
 
     if name not in used_names:
