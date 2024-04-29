@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'channels',
     "django_unicorn",
     'pages',
+    'channels_redis',
     'django_htmx'
 ]
 
@@ -99,21 +100,29 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static')
 ]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-MEDIA_ROOT = "media"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = '/media/'
 
-DATA_UPLOAD_MAX_NUMBER_FILES = 50000
+STORAGES = {
+    "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+AZURE_CONNECTION_STRING = os.getenv('AZURE_CONNECTION_STRING')
+
+DATA_UPLOAD_MAX_NUMBER_FILES = 100000
 
 ASGI_APPLICATION = 'DocumentSearch.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(os.getenv('APP_NAME'), 6379)],
+        },
+    },
 }
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
