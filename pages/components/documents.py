@@ -377,3 +377,6 @@ class DocumentsView(UnicornView):
         self.call('decrement')
 
         self.initialize_directory_data()
+
+    def refreshDirectories(self):
+        self.initialize_directory_data()
