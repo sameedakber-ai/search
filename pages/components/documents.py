@@ -187,9 +187,11 @@ class DocumentsView(UnicornView):
 
             print("Unsuccessful file load count: ", unsuccessful_file_load_count)
 
-            if File.objects.filter(directory=directory, processed=True).count() == File.objects.filter(directory=directory).count():
+            if File.objects.filter(directory=directory, processed=False).count() == 0:
                 directory.processed = True
                 directory.save()
+
+        self.call('enable')
 
 
 
@@ -311,6 +313,8 @@ class DocumentsView(UnicornView):
         self.question = ''
 
         self.initialize_directory_data()
+
+        self.call('enable')
 
     def update_chat_selection(self, directory_id):
 

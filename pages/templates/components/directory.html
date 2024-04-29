@@ -16,8 +16,8 @@
                 Expand
             </button>
 
-            <button class="flex items-center space-x-2 {% if directory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
-                    unicorn:click.prevent="update_chat_selection({{ directory.id }})" {% if not directory.processed %}onclick="disable(this)"{% endif %}
+            <button class="flex items-center space-x-2 process {% if directory.processed %}bg-emerald-600{% else %}bg-gray-700{% endif %} text-xs py-1 px-2 rounded md"
+                    unicorn:click.prevent="update_chat_selection({{ directory.id }})" {% if not directory.processed %}onclick="disable()"{% endif %}
                     id="process-document-{{ directory.id }}">
 
                 <div>

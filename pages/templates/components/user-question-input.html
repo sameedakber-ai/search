@@ -1,12 +1,12 @@
 <div class="fixed bottom-6 left-3/4 w-1/2 transform -translate-x-3/4 rounded-lg">
 
-    <form action="" method="post" unicorn:submit.prevent="respond" class="max-w-4xl mx-auto" id="question-form">
+    <form action="" method="post" unicorn:submit.prevent="respond" class="max-w-4xl mx-auto" id="question-form" onsubmit="updateChat()">
 
         <div class="flex space-x-2 bg-gray-800 py-4 px-3 mt-2 w-full rounded-md">
 
             <input unicorn:model.defer="question" type="text" id="question-input" class="bg-transparent focus:outline-none w-full" placeholder="Message Bot ..." {% if not selected_directory %}disabled{% endif %}>
 
-            <button type="submit" {% if not selected_directory %}disabled{% endif %} onclick="updateChat()">
+            <button type="submit" {% if not selected_directory %}disabled{% endif %}>
 
                 {% include "components/send.html" %}
 
