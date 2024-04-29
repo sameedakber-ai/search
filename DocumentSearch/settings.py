@@ -11,14 +11,17 @@ DEBUG = False
 ALLOWED_HOSTS = [os.getenv('APP_NAME')]
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     "django_unicorn",
     'pages',
+    'django_htmx'
 ]
 
 MIDDLEWARE = [
@@ -65,7 +68,6 @@ DATABASES = {
     }
 }
 
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -91,7 +93,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
@@ -106,6 +107,14 @@ DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = "media"
 
 DATA_UPLOAD_MAX_NUMBER_FILES = 50000
+
+ASGI_APPLICATION = 'DocumentSearch.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
 
 if os.environ.get('DJANGO_DEVELOPMENT', 'true'):
     from .settings_dev import *
