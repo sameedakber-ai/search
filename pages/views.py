@@ -1,4 +1,3 @@
-import json
 import math
 import os.path
 
@@ -7,10 +6,10 @@ from collections import defaultdict
 from django.http import JsonResponse
 from pages.models import Directory, File
 
-from .consumers import UploadProgressConsumer
+
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.http import HttpResponse
+
 
 from langchain_community.document_loaders import TextLoader, PyPDFLoader, Docx2txtLoader
 
@@ -72,6 +71,7 @@ def upload_files(request):
 
 
 def fetch_directory_tree(request):
+
     directory_id = request.GET.get('directory_id')
 
     return JsonResponse({'directory': Directory.objects.filter(id=directory_id).get().structure})
@@ -105,6 +105,7 @@ def fetch_document(request):
 
 
 def make_name(name):
+
     used_names = [obj.name for obj in Directory.objects.all()]
 
     if name not in used_names:
