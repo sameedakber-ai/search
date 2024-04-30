@@ -84,7 +84,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000']
+CSRF_TRUSTED_ORIGINS = [os.getenv('APP_NAME')]
 
 LANGUAGE_CODE = 'en-us'
 
