@@ -69,7 +69,7 @@ class DocumentsView(UnicornView):
 
         extension = os.path.splitext(file_path)[1].lstrip('.').lower()
 
-        document = ''
+        documents = []
 
         try:
 
@@ -83,7 +83,15 @@ class DocumentsView(UnicornView):
 
             try:
 
-                document = loader(file_path).load()
+                text_splitter = RecursiveCharacterTextSplitter(chunk_size=100000, chunk_overlap=5000, length_function=len, is_separator_regex=False)
+
+                if loader == TextLoader:
+
+                    documents = loader(file_path, encoding="UTF-8").load_and_split(text_splitter=text_splitter)
+
+                else:
+
+                    documents = loader(file_path).load_and_split(text_splitter=text_splitter)
 
             except FileNotFoundError:
 
@@ -93,7 +101,7 @@ class DocumentsView(UnicornView):
 
                 print("Can not read file ... skipping file")
 
-        return document
+        return documents
 
 
     def create_vector_db(self, documents, chroma_path='', persist=True):
@@ -157,15 +165,20 @@ class DocumentsView(UnicornView):
 
             for i, file_batch in enumerate(file_batches):
 
-                loaded_file_batch = [self.load_file('media/{}'.format(file.file)) for file in file_batch]
+                loaded_split_files = [self.load_file('media/{}'.format(file.file)) for file in file_batch]
 
-                loaded_file_batch = [file[0] for file in loaded_file_batch if file]
+                loaded_split_files = [loaded_split_file for loaded_split_file in loaded_split_files if loaded_split_file]
 
-                unsuccessful_file_load_count += len(file_batch) - len(loaded_file_batch)
+                loaded_files = []
 
-                if loaded_file_batch:
+                for loaded_split_file in loaded_split_files:
+                    loaded_files.extend(loaded_split_file)
 
-                    vector_db = self.create_vector_db(loaded_file_batch, vector_db_path)
+                unsuccessful_file_load_count += len(file_batch) - len(loaded_split_files)
+
+                if loaded_files:
+
+                    vector_db = self.create_vector_db(loaded_files, vector_db_path)
 
                 for file in file_batch:
                     file.processed = True
@@ -297,11 +310,14 @@ class DocumentsView(UnicornView):
 
                 llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
-                formatted_response = f"{llm_response}<div class='mt-4'>"
+                sources_dict = defaultdict(list)
                 for source, score in zip(sources, scores):
+                    sources_dict[source].append(score)
+
+                formatted_response = f"{llm_response}<div class='mt-4'>"
+                for source in sources_dict:
                     modified_source = source.split(f"/")[-1]
-                    request_source = "___".join(source.split(f"\\"))
-                    formatted_response += f'<a href="" class="font-bold block text-emerald-600 mb-2" onclick="showDocument(\'{request_source}\', event, this)">{modified_source} - {score}</a>'
+                    formatted_response += f'<p class="font-bold block text-emerald-600 mb-2">{modified_source} - {max(sources_dict[source])}</p>'
                 formatted_response += '</div>'
 
                 directory.chat_history['chat_history'].append([self.question, formatted_response])
