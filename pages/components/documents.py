@@ -83,7 +83,12 @@ class DocumentsView(UnicornView):
 
             try:
 
-                text_splitter = RecursiveCharacterTextSplitter(chunk_size=100000, chunk_overlap=5000, length_function=len, is_separator_regex=False)
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=100000,
+                    chunk_overlap=5000,
+                    length_function=len,
+                    is_separator_regex=False
+                )
 
                 if loader == TextLoader:
 
@@ -112,6 +117,8 @@ class DocumentsView(UnicornView):
 
             db.persist()
 
+        return db
+
     def get_vector_db(self, chroma_path):
 
         embedding_function = OpenAIEmbeddings()
@@ -127,10 +134,8 @@ class DocumentsView(UnicornView):
     def split_document(self, documents):
 
         text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-
-            chunk_size=1000,
+            chunk_size=2000,
             chunk_overlap=200
-
         )
 
         return text_splitter.create_documents(documents)
@@ -277,7 +282,7 @@ class DocumentsView(UnicornView):
 
         vector_db_from_all_files = self.get_vector_db(vector_db_path)
 
-        files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=3)
+        files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=10)
 
         relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score)
 
@@ -293,9 +298,7 @@ class DocumentsView(UnicornView):
             for file in relevant_files:
                 text_chunks.extend(self.split_document([file[0].page_content]))
 
-            vector_db_from_relevant_chunks_only = Chroma.from_documents(documents=text_chunks,
-                                                                        embedding=OpenAIEmbeddings(),
-                                                                        persist_directory='')
+            vector_db_from_relevant_chunks_only = self.create_vector_db(documents=text_chunks, chroma_path='', persist=False)
 
             relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=5)
 
@@ -367,7 +370,7 @@ class DocumentsView(UnicornView):
             curr = scores[0]
             next = scores[i + 1]
             best.append(documents[i])
-            if ((curr - next) / curr) >= 0.15:
+            if ((curr - next) / curr) >= 0.05:
                 break
 
         return best
