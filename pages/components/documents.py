@@ -47,18 +47,6 @@ embedding_models = {
     'openai': OpenAIEmbeddings()
 }
 
-# instruction_models = {
-#
-#     'llama': AutoModelForCausalLM.from_pretrained(
-#         pretrained_model_name_or_path="meta-llama/Meta-Llama-3-8B-Instruct",
-#         device_map="auto",
-#         token=os.getenv('HF_TOKEN')
-#     ),
-#
-#     'openai': ChatOpenAI()
-#
-# }
-
 
 class DocumentsView(UnicornView):
     dir_path = ''
@@ -72,8 +60,6 @@ class DocumentsView(UnicornView):
     cutoff_score = 0.6
 
     embedding_model = 'bge'
-
-    instruct_model = 'llama'
 
 
     def initialize_directory_data(self):
@@ -353,43 +339,15 @@ class DocumentsView(UnicornView):
 
         prompt = prompt_template.format(context=context_text, question=query)
 
+        model = ChatOpenAI()
 
+        response = model.predict(prompt)
 
-        HF_TOKEN = os.getenv('HF_TOKEN')
+        pattern = re.compile(r'\b(?:bg|text)-\w+\s*')
 
-        model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
+        response = re.sub(pattern, '', response)
 
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type='nf4',
-            bnb_4bit_compute_dtype=torch.bfloat16
-        )
-
-        tokenizer = AutoTokenizer.from_pretrained(
-            pretrained_model_name_or_path=model_name,
-            token=HF_TOKEN
-        )
-
-        tokenizer.pad_token = tokenizer.eos_token
-
-        model = AutoModelForCausalLM.from_pretrained(
-            pretrained_model_name_or_path="meta-llama/Meta-Llama-3-8B-Instruct",
-            device_map="auto",
-            quantization_config=bnb_config,
-            token=os.getenv('HF_TOKEN')
-        )
-
-        text_generator = pipeline(
-            "text-generation",
-            model = model,
-            tokenizer=tokenizer,
-            max_new_tokens=512
-        )
-
-        outputs = text_generator(prompt)
-
-        return outputs[0]["generated_text"][len(prompt):]
+        return response
 
     def respond(self):
 
