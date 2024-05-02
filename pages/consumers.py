@@ -44,8 +44,17 @@ class UploadProgressConsumer(AsyncWebsocketConsumer):
 
     async def send_process_message(self, event):
 
-
         html = get_template("components/process-notification.html").render(
+
+            context={"progress": event['progress'], 'uploaded': event['uploaded'], 'id': event['id']}
+
+        )
+
+        await self.send(text_data=html)
+
+    async def send_sub_process_message(self, event):
+
+        html = get_template("components/sub-process-notification.html").render(
 
             context={"progress": event['progress'], 'uploaded': event['uploaded'], 'id': event['id']}
 
