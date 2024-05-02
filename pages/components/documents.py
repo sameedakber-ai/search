@@ -9,10 +9,12 @@ from dotenv import load_dotenv
 from collections import defaultdict
 
 from langchain_community.document_loaders import TextLoader, DirectoryLoader, PyPDFLoader, Docx2txtLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+from langchain.schema.document import Document
+from langchain.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceInstructEmbeddings
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -28,6 +30,17 @@ loaders = {
     'docx': Docx2txtLoader
 }
 
+embedding_models = {
+
+    'bge': HuggingFaceBgeEmbeddings(
+        model_name="BAAI/bge-small-en",
+        model_kwargs={"device": "cpu"},
+        encode_kwargs={"normalize_embeddings": True}
+    ),
+
+    'openai': OpenAIEmbeddings()
+}
+
 
 class DocumentsView(UnicornView):
     dir_path = ''
@@ -39,6 +52,8 @@ class DocumentsView(UnicornView):
     selected_directory = ''
 
     cutoff_score = 0.6
+
+    embedding_model = 'bge'
 
 
     def initialize_directory_data(self):
@@ -69,6 +84,8 @@ class DocumentsView(UnicornView):
 
         extension = os.path.splitext(file_path)[1].lstrip('.').lower()
 
+        document = ''
+
         documents = []
 
         try:
@@ -83,20 +100,13 @@ class DocumentsView(UnicornView):
 
             try:
 
-                text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=100000,
-                    chunk_overlap=5000,
-                    length_function=len,
-                    is_separator_regex=False
-                )
-
                 if loader == TextLoader:
 
-                    documents = loader(file_path, encoding="UTF-8").load_and_split(text_splitter=text_splitter)
+                    document = loader(file_path, encoding="UTF-8").load()
 
                 else:
 
-                    documents = loader(file_path).load_and_split(text_splitter=text_splitter)
+                    document = loader(file_path).load()
 
             except FileNotFoundError:
 
@@ -106,12 +116,47 @@ class DocumentsView(UnicornView):
 
                 print("Can not read file ... skipping file")
 
+            else:
+
+                # If file is markdown, split by markdown headers and combine these into sets of markdown sections
+
+                headers_to_split_on = [
+                    ("##", "Header"),
+                ]
+
+                markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on,
+                                                               strip_headers=False)
+
+                md_header_splits = markdown_splitter.split_text(document[0].page_content)
+
+                md_header_splits_batch_size = 20
+
+                documents = []
+
+                for i in range(0, len(md_header_splits), md_header_splits_batch_size):
+                    md_header_splits_batch = md_header_splits[i:i + md_header_splits_batch_size]
+                    md_header_splits_batch_text_content = '\n\n'.join([md_header_section.page_content for md_header_section in md_header_splits_batch])
+                    document = Document(page_content=md_header_splits_batch_text_content, metadata={'source': file_path})
+                    documents.append(document)
+
+                print(len(documents))
+
+
+                text_splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=100000,
+                    chunk_overlap=5000,
+                    length_function=len,
+                    is_separator_regex=False
+                )
+
         return documents
 
 
     def create_vector_db(self, documents, chroma_path='', persist=True):
 
-        db = Chroma.from_documents(documents=documents, embedding=OpenAIEmbeddings(), persist_directory=chroma_path)
+        embedding = embedding_models[self.embedding_model]
+
+        db = Chroma.from_documents(documents=documents, embedding=embedding, persist_directory=chroma_path)
 
         if persist:
 
@@ -121,7 +166,7 @@ class DocumentsView(UnicornView):
 
     def get_vector_db(self, chroma_path):
 
-        embedding_function = OpenAIEmbeddings()
+        embedding_function = embedding_models[self.embedding_model]
 
         db = Chroma(persist_directory=chroma_path, embedding_function=embedding_function)
 
@@ -138,7 +183,15 @@ class DocumentsView(UnicornView):
             chunk_overlap=200
         )
 
-        return text_splitter.create_documents(documents)
+        headers_to_split_on = [
+            ("##", "Header"),
+        ]
+
+        markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
+
+        splits = markdown_splitter.split_text(documents[0])
+
+        return splits
 
     def create_db(self, directory):
 
@@ -278,7 +331,7 @@ class DocumentsView(UnicornView):
 
         vector_db_path = 'media/embeddings/{}'.format(directory.name)
 
-        query = self.get_recontextualized_question()
+        query = self.question
 
         vector_db_from_all_files = self.get_vector_db(vector_db_path)
 
