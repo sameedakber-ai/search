@@ -246,11 +246,11 @@ class DocumentsView(UnicornView):
 
                     loaded_file_batches = [loaded_files[i:i + loaded_file_batch_size] for i in range(0, len(loaded_files), loaded_file_batch_size)]
 
-                    for loaded_file_batch in loaded_file_batches:
+                    for j, loaded_file_batch in enumerate(loaded_file_batches):
 
                         vector_db = self.create_vector_db(loaded_file_batch, vector_db_path)
 
-                        current_progress = int(math.ceil((i + 1) * 10 * loaded_file_batch_size / len(loaded_files)))
+                        current_progress = int(math.ceil((j + 1) * 10 * loaded_file_batch_size / len(loaded_files)))
 
                         async_to_sync(channel_layer.group_send)(
 
@@ -258,7 +258,7 @@ class DocumentsView(UnicornView):
                             {
                                 "type": "send_sub_process_message",
                                 "id": directory.id,
-                                "uploaded": "{0} / {1}".format((i + 1) * loaded_file_batch_size, len(loaded_files)),
+                                "uploaded": "{0} / {1}".format((j + 1) * loaded_file_batch_size, len(loaded_files)),
                                 "progress": '<p>|' + "=" * current_progress + '<span class="text-gray-400">' + "=" * (
                                             10 - current_progress) + '|</span></p>',
                             }
