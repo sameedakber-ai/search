@@ -1,3 +1,5 @@
+import json
+
 from pages.models import Directory, File
 
 from django_unicorn.components import UnicornView
@@ -15,6 +17,10 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document
 from langchain.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceInstructEmbeddings
+
+import torch
+import transformers
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -41,6 +47,18 @@ embedding_models = {
     'openai': OpenAIEmbeddings()
 }
 
+# instruction_models = {
+#
+#     'llama': AutoModelForCausalLM.from_pretrained(
+#         pretrained_model_name_or_path="meta-llama/Meta-Llama-3-8B-Instruct",
+#         device_map="auto",
+#         token=os.getenv('HF_TOKEN')
+#     ),
+#
+#     'openai': ChatOpenAI()
+#
+# }
+
 
 class DocumentsView(UnicornView):
     dir_path = ''
@@ -54,6 +72,8 @@ class DocumentsView(UnicornView):
     cutoff_score = 0.6
 
     embedding_model = 'bge'
+
+    instruct_model = 'llama'
 
 
     def initialize_directory_data(self):
@@ -236,7 +256,28 @@ class DocumentsView(UnicornView):
 
                 if loaded_files:
 
-                    vector_db = self.create_vector_db(loaded_files, vector_db_path)
+                    loaded_file_batch_size = int(math.ceil(len(loaded_files) / 5))
+
+                    loaded_file_batches = [loaded_files[i:i + loaded_file_batch_size] for i in range(0, len(loaded_files), loaded_file_batch_size)]
+
+                    for loaded_file_batch in loaded_file_batches:
+
+                        vector_db = self.create_vector_db(loaded_file_batch, vector_db_path)
+
+                        current_progress = int(math.ceil((i + 1) * 10 * loaded_file_batch_size / len(loaded_files)))
+
+                        async_to_sync(channel_layer.group_send)(
+
+                            "upload",
+                            {
+                                "type": "send_sub_process_message",
+                                "id": directory.id,
+                                "uploaded": "{0} / {1}".format((i + 1) * loaded_file_batch_size, len(loaded_files)),
+                                "progress": '<p>|' + "=" * current_progress + '<span class="text-gray-400">' + "=" * (
+                                            10 - current_progress) + '|</span></p>',
+                            }
+
+                        )
 
                 for file in file_batch:
                     file.processed = True
@@ -312,15 +353,43 @@ class DocumentsView(UnicornView):
 
         prompt = prompt_template.format(context=context_text, question=query)
 
-        model = ChatOpenAI()
 
-        response = model.predict(prompt)
 
-        pattern = re.compile(r'\b(?:bg|text)-\w+\s*')
+        HF_TOKEN = os.getenv('HF_TOKEN')
 
-        response = re.sub(pattern, '', response)
+        model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 
-        return response
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type='nf4',
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            pretrained_model_name_or_path=model_name,
+            token=HF_TOKEN
+        )
+
+        tokenizer.pad_token = tokenizer.eos_token
+
+        model = AutoModelForCausalLM.from_pretrained(
+            pretrained_model_name_or_path="meta-llama/Meta-Llama-3-8B-Instruct",
+            device_map="auto",
+            quantization_config=bnb_config,
+            token=os.getenv('HF_TOKEN')
+        )
+
+        text_generator = pipeline(
+            "text-generation",
+            model = model,
+            tokenizer=tokenizer,
+            max_new_tokens=512
+        )
+
+        outputs = text_generator(prompt)
+
+        return outputs[0]["generated_text"][len(prompt):]
 
     def respond(self):
 
