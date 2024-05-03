@@ -40,6 +40,8 @@ def upload_files(request):
 
                 path = file.name.split('___')
 
+                path[0] = directory.name
+
                 i = 1
                 for curr, next in zip(path[:-1], path[i:]):
                     if next not in directory_structure[curr]:
@@ -74,7 +76,17 @@ def fetch_directory_tree(request):
 
     directory_id = request.GET.get('directory_id')
 
-    return JsonResponse({'directory': Directory.objects.filter(id=directory_id).get().structure})
+    directory = Directory.objects.filter(id=directory_id).first()
+
+    directory_structure = directory.structure
+
+    directory_files_status = {}
+
+    for file in File.objects.filter(directory_id=directory_id).all():
+
+        directory_files_status[str(file.file)] = file.processed
+
+    return JsonResponse({'directory': directory_structure, 'files_status': directory_files_status})
 
 
 def fetch_document(request):

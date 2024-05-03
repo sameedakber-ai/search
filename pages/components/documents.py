@@ -283,6 +283,16 @@ class DocumentsView(UnicornView):
 
                 )
 
+                async_to_sync(channel_layer.group_send)(
+
+                    "upload",
+                    {
+                        "type": "checkmark_files",
+                        "ids": ["check-{}".format(str(file.file)) for file in file_batch],
+                    }
+
+                )
+
             print("Unsuccessful file load count: ", unsuccessful_file_load_count)
 
             if File.objects.filter(directory=directory, processed=False).count() == 0:
@@ -483,3 +493,15 @@ class DocumentsView(UnicornView):
 
     def refreshDirectories(self):
         self.initialize_directory_data()
+
+
+    def expand(self, directory_id):
+        directory = Directory.objects.filter(id=directory_id).first()
+        if directory:
+            directory_structure = directory.structure
+            print(directory_structure)
+            directory_files_status = {}
+            for file in File.objects.filter(directory_id=directory_id).all():
+                directory_files_status[str(file.file)] = file.processed
+            print(directory_files_status)
+            self.call('expand', directory_id, json.dumps(directory_structure), json.dumps(directory_files_status))

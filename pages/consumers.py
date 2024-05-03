@@ -61,3 +61,13 @@ class UploadProgressConsumer(AsyncWebsocketConsumer):
         )
 
         await self.send(text_data=html)
+
+    async def checkmark_files(self, event):
+
+        html = get_template("components/checkmark-files.html").render(
+
+            context={'ids': event['ids']}
+
+        )
+
+        await self.send(text_data=html)
