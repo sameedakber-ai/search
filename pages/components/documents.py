@@ -427,6 +427,8 @@ class DocumentsView(UnicornView):
 
     def update_chat_selection(self, directory_id):
 
+        print(self.embedding_model)
+
         directory = Directory.objects.get(id=directory_id)
 
         if directory.processed:
@@ -505,3 +507,11 @@ class DocumentsView(UnicornView):
                 directory_files_status[str(file.file)] = file.processed
             print(directory_files_status)
             self.call('expand', directory_id, json.dumps(directory_structure), json.dumps(directory_files_status))
+
+    def change_embedding_model(self):
+        if self.embedding_model == 'openai':
+            self.embedding_model = 'bge'
+        else:
+            self.embedding_model = 'openai'
+
+        self.initialize_directory_data()

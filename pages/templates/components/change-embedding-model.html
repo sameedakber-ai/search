@@ -1,0 +1,29 @@
+<div class="text-md font-bold rounded-lg p-1 fixed w-72 bottom-14">
+
+    <div class="flex items-center space-x-3">
+
+        <div>
+
+            Embeddings:
+
+        </div>
+
+        <div class="flex items-center">
+
+            <input id="openai" name="embedding_model" type="radio" value="openai" unicorn:model.defer="embedding_model" class="w-4 h-4 text-blue-600">
+
+            <label for="openai" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">OpenAI</label>
+
+        </div>
+
+        <div class="flex items-center">
+
+            <input id="bge" name="embedding_model" type="radio" value="bge" unicorn:model.defer="embedding_model" class="w-4 h-4 text-blue-600">
+
+            <label for="bge" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">BGE</label>
+
+        </div>
+
+    </div>
+
+</div>

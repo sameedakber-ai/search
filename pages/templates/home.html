@@ -322,6 +322,8 @@
             $('.threshold-change-btn').prop('disabled', true);
             disableUserInput();
             disableUploadInput();
+            $('#openai').prop('disabled', true);
+            $('#bge').prop('disabled', true);
         }
 
         function enable() {
@@ -329,6 +331,8 @@
             $('.threshold-change-btn').prop('disabled', false);
             enableUserInput();
             enableUploadInput();
+            $('#openai').prop('disabled', false);
+            $('#bge').prop('disabled', false);
         }
 
 
