@@ -10,17 +10,14 @@ import re
 from dotenv import load_dotenv
 from collections import defaultdict
 
-from langchain_community.document_loaders import TextLoader, DirectoryLoader, PyPDFLoader, Docx2txtLoader
+from langchain_community.document_loaders import TextLoader, PyPDFLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document
-from langchain.embeddings import HuggingFaceBgeEmbeddings, HuggingFaceInstructEmbeddings
+from langchain.embeddings import HuggingFaceBgeEmbeddings
 
-import torch
-import transformers
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -124,39 +121,46 @@ class DocumentsView(UnicornView):
 
             else:
 
-                # If file is markdown, split by markdown headers and combine these into sets of markdown sections
+                if extension == 'md':
 
-                headers_to_split_on = [
-                    ("##", "Header"),
-                ]
+                    # If file is markdown, split by markdown headers and combine these into sets of markdown sections
 
-                markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on,
-                                                               strip_headers=False)
+                    headers_to_split_on = [
+                        ("##", "Header"),
+                    ]
 
-                md_header_splits = markdown_splitter.split_text(document[0].page_content)
+                    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on,
+                                                                   strip_headers=False)
 
-                md_header_splits_batch_size = 20
-
-                documents = []
-
-                for i in range(0, len(md_header_splits), md_header_splits_batch_size):
-                    md_header_splits_batch = md_header_splits[i:i + md_header_splits_batch_size]
-                    md_header_splits_batch_text_content = '\n\n'.join([md_header_section.page_content for md_header_section in md_header_splits_batch])
-                    document = Document(page_content=md_header_splits_batch_text_content, metadata={'source': file_path})
-                    documents.append(document)
-
-                print(len(documents))
+                    md_header_splits = markdown_splitter.split_text(document[0].page_content)
 
 
-                text_splitter = RecursiveCharacterTextSplitter(
-                    chunk_size=100000,
-                    chunk_overlap=5000,
-                    length_function=len,
-                    is_separator_regex=False
-                )
+                    md_header_splits_batch_size = 20
+
+                    documents = []
+
+                    for i in range(0, len(md_header_splits), md_header_splits_batch_size):
+
+                        md_header_splits_batch = md_header_splits[i:i + md_header_splits_batch_size]
+
+                        md_header_splits_batch_text_content = '\n\n'.join([md_header_section.page_content for md_header_section in md_header_splits_batch])
+
+                        document = Document(page_content=md_header_splits_batch_text_content, metadata={'source': file_path})
+
+                        documents.append(document)
+
+                else:
+
+                    text_splitter = RecursiveCharacterTextSplitter(
+                        chunk_size=50000,
+                        chunk_overlap=5000,
+                        length_function=len,
+                        is_separator_regex=False
+                    )
+
+                    documents = [Document(page_content=split, metadata={'source': file_path}) for split in text_splitter.split_text(document[0].page_content)]
 
         return documents
-
 
     def create_vector_db(self, documents, chroma_path='', persist=True):
 
@@ -182,20 +186,47 @@ class DocumentsView(UnicornView):
 
         return db.similarity_search_with_relevance_scores(query, k)
 
-    def split_document(self, documents):
+    def split_document(self, document, file_path):
 
-        text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            chunk_size=2000,
-            chunk_overlap=200
-        )
+        extension = os.path.splitext(file_path)[1].lstrip('.').lower()
 
-        headers_to_split_on = [
-            ("##", "Header"),
-        ]
+        splits = []
 
-        markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
+        if extension == 'md':
 
-        splits = markdown_splitter.split_text(documents[0])
+            headers_to_split_on = [
+                ("##", "Header"),
+            ]
+
+            markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
+
+            documents = [Document(page_content=split.page_content, metadata={'source': file_path}) for split in markdown_splitter.split_text(document)]
+
+            splits = []
+
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=4000,
+                chunk_overlap=400,
+                length_function=len,
+                is_separator_regex=False
+            )
+
+            for document in documents:
+                if len(document.page_content) >= 4000:
+                    splits.extend(text_splitter.split_documents([document]))
+                else:
+                    splits.append(document)
+
+        else:
+
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1000,
+                chunk_overlap=100,
+                length_function=len,
+                is_separator_regex=False
+            )
+
+            splits = [Document(page_content=split, metadata={'source': file_path}) for split in text_splitter.split_text(document)]
 
         return splits
 
@@ -382,18 +413,30 @@ class DocumentsView(UnicornView):
             print('Total number of relevant files: ', len(relevant_files))
 
             sources = [doc.metadata.get('source', None) for doc, _score in relevant_files]
+
             scores = [round(_score, 2) for doc, _score in relevant_files]
 
             text_chunks = []
-            for file in relevant_files:
-                text_chunks.extend(self.split_document([file[0].page_content]))
+
+            for file, source in zip(relevant_files, sources):
+
+                text_chunks.extend(self.split_document(file[0].page_content, source))
+
+            print(len(text_chunks))
+
+            # text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            #     model_name="gpt-3.5-turbo",
+            #     chunk_size=8000,
+            #     chunk_overlap=500,
+            # )
+            #
+            # text_chunks = text_splitter.split_documents(text_chunks)
 
             vector_db_from_relevant_chunks_only = self.create_vector_db(documents=text_chunks, chroma_path='', persist=False)
 
-            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=5)
+            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=12)
 
-            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks,
-                                                                                        self.cutoff_score)
+            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score)
 
             if relevant_text_chunks_based_on_criteria is None:
                 self.call('showNoRelevantDataMessage')
@@ -404,13 +447,19 @@ class DocumentsView(UnicornView):
                 llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
                 sources_dict = defaultdict(list)
+
                 for source, score in zip(sources, scores):
+
                     sources_dict[source].append(score)
 
                 formatted_response = f"{llm_response}<div class='mt-4'>"
+
                 for source in sources_dict:
+
                     modified_source = source.split(f"/")[-1]
+
                     formatted_response += f'<p class="font-bold block text-emerald-600 mb-2">{modified_source} - {max(sources_dict[source])}</p>'
+
                 formatted_response += '</div>'
 
                 directory.chat_history['chat_history'].append([self.question, formatted_response])
@@ -426,8 +475,6 @@ class DocumentsView(UnicornView):
         self.call('enable')
 
     def update_chat_selection(self, directory_id):
-
-        print(self.embedding_model)
 
         directory = Directory.objects.get(id=directory_id)
 
@@ -496,7 +543,6 @@ class DocumentsView(UnicornView):
     def refreshDirectories(self):
         self.initialize_directory_data()
 
-
     def expand(self, directory_id):
         directory = Directory.objects.filter(id=directory_id).first()
         if directory:
@@ -507,11 +553,3 @@ class DocumentsView(UnicornView):
                 directory_files_status[str(file.file)] = file.processed
             print(directory_files_status)
             self.call('expand', directory_id, json.dumps(directory_structure), json.dumps(directory_files_status))
-
-    def change_embedding_model(self):
-        if self.embedding_model == 'openai':
-            self.embedding_model = 'bge'
-        else:
-            self.embedding_model = 'openai'
-
-        self.initialize_directory_data()
