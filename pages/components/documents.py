@@ -17,6 +17,7 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.document import Document
 from langchain.embeddings import HuggingFaceBgeEmbeddings
+import tiktoken
 
 
 from asgiref.sync import async_to_sync
@@ -123,6 +124,27 @@ class DocumentsView(UnicornView):
 
                 if extension == 'md':
 
+                    title_pattern = r'(?=---\ntitle:)'
+
+                    split_segments = re.split(title_pattern, document[0].page_content)
+
+                    documents = []
+
+                    for segment in split_segments:
+
+                        title_pattern = r'(?<=title:\s)(.*?)(?=\n)'
+
+                        title = re.search(title_pattern, segment.strip())[0].strip()
+
+                        document = Document(page_content=segment.strip(),
+                                            metadata={'source': file_path,
+                                                      'title': title})
+
+                        documents.append(document)
+
+
+
+
                     # If file is markdown, split by markdown headers and combine these into sets of markdown sections
 
                     headers_to_split_on = [
@@ -134,10 +156,12 @@ class DocumentsView(UnicornView):
 
                     md_header_splits = markdown_splitter.split_text(document[0].page_content)
 
-
-                    md_header_splits_batch_size = 20
+                    md_header_splits_batch_size = 1
 
                     documents = []
+
+                    # Regular expression pattern
+                    pattern = r'(?<=##\s).*'
 
                     for i in range(0, len(md_header_splits), md_header_splits_batch_size):
 
@@ -145,7 +169,9 @@ class DocumentsView(UnicornView):
 
                         md_header_splits_batch_text_content = '\n\n'.join([md_header_section.page_content for md_header_section in md_header_splits_batch])
 
-                        document = Document(page_content=md_header_splits_batch_text_content, metadata={'source': file_path})
+                        md_header_splits_batch_header_content = "".join([title+'\n']+[header.strip() for header in re.findall(pattern,  md_header_splits_batch_text_content)])
+
+                        document = Document(page_content=md_header_splits_batch_text_content, metadata={'source': file_path, 'headers': md_header_splits_batch_header_content})
 
                         documents.append(document)
 
@@ -190,32 +216,19 @@ class DocumentsView(UnicornView):
 
         extension = os.path.splitext(file_path)[1].lstrip('.').lower()
 
-        splits = []
-
         if extension == 'md':
 
+            pattern = r'(?<=###\s).*'
+
             headers_to_split_on = [
-                ("##", "Header"),
+                ("###", "Header-2"),
             ]
 
             markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
 
-            documents = [Document(page_content=split.page_content, metadata={'source': file_path}) for split in markdown_splitter.split_text(document)]
+            header_pattern_matches = lambda split: ["\n"] + [header.strip() for header in re.findall(pattern, split.page_content)] if re.findall(pattern, split.page_content) else [""]
 
-            splits = []
-
-            text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=4000,
-                chunk_overlap=400,
-                length_function=len,
-                is_separator_regex=False
-            )
-
-            for document in documents:
-                if len(document.page_content) >= 4000:
-                    splits.extend(text_splitter.split_documents([document]))
-                else:
-                    splits.append(document)
+            splits = [Document(page_content=split.page_content, metadata={'source': file_path, 'headers': "".join([document[0].metadata['headers']] + header_pattern_matches(split))}) for split in markdown_splitter.split_text(document[0].page_content)]
 
         else:
 
@@ -252,7 +265,7 @@ class DocumentsView(UnicornView):
 
             )
 
-            file_batch_size = int(math.ceil(len(files) / 5))
+            file_batch_size = int(math.ceil(len(files) / 10))
 
             file_batches = [files[i:i + file_batch_size] for i in range(0, len(files), file_batch_size)]
 
@@ -273,7 +286,19 @@ class DocumentsView(UnicornView):
 
                 if loaded_files:
 
-                    loaded_file_batch_size = int(math.ceil(len(loaded_files) / 5))
+                    async_to_sync(channel_layer.group_send)(
+
+                        "upload",
+                        {
+                            "type": "send_sub_process_message",
+                            "id": directory.id,
+                            "uploaded": "0 / {}".format(len(loaded_files)),
+                            "progress": '<p>|<span class="text-gray-400">' + "=" * 10 + '|</span></p>',
+                        }
+
+                    )
+
+                    loaded_file_batch_size = int(math.ceil(len(loaded_files) / 10))
 
                     loaded_file_batches = [loaded_files[i:i + loaded_file_batch_size] for i in range(0, len(loaded_files), loaded_file_batch_size)]
 
@@ -373,8 +398,8 @@ class DocumentsView(UnicornView):
 
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
 
-        print("Total number of tokens in context: ",
-              len(context_text) / 3)  # Each token is approximately 3 characters (from openai documentation)
+        # print("Total number of tokens in context: ",
+        #       len(context_text) / 3)  # Each token is approximately 3 characters (from openai documentation)
 
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
@@ -403,14 +428,14 @@ class DocumentsView(UnicornView):
 
         vector_db_from_all_files = self.get_vector_db(vector_db_path)
 
-        files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=10)
+        files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=5)
 
-        relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score)
+        relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score, query=query)
 
         if relevant_files is None:
             self.call('showNoRelevantDataMessage')
         else:
-            print('Total number of relevant files: ', len(relevant_files))
+            # print('Total number of relevant files: ', len(relevant_files))
 
             sources = [doc.metadata.get('source', None) for doc, _score in relevant_files]
 
@@ -420,29 +445,20 @@ class DocumentsView(UnicornView):
 
             for file, source in zip(relevant_files, sources):
 
-                text_chunks.extend(self.split_document(file[0].page_content, source))
-
-            print(len(text_chunks))
-
-            # text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-            #     model_name="gpt-3.5-turbo",
-            #     chunk_size=8000,
-            #     chunk_overlap=500,
-            # )
-            #
-            # text_chunks = text_splitter.split_documents(text_chunks)
+                text_chunks.extend(self.split_document(file, source))
 
             vector_db_from_relevant_chunks_only = self.create_vector_db(documents=text_chunks, chroma_path='', persist=False)
 
-            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=12)
+            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=4)
 
-            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score)
+            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score, query=query)
+
 
             if relevant_text_chunks_based_on_criteria is None:
                 self.call('showNoRelevantDataMessage')
             else:
 
-                print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
+                # print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
 
                 llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
@@ -491,28 +507,65 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
 
-    def sort_docs_by_relevance_scores(self, documents, cutoff_score):
+    def sort_docs_by_relevance_scores(self, documents, cutoff_score, query = None):
 
-        if len(documents) == 1:
-            return documents
+        print("Before post processing: \n\n ", documents)
+        print("\n\n")
 
-        scores = [round(_score, 2) for doc, _score in documents]
-        scores.sort(reverse=True)
+        header_texts = []
 
-        best = []
+        for document in documents:
+            if 'headers' in document[0].metadata:
+                header_texts.append(Document(page_content=document[0].metadata['headers'], metadata={'source': document[0].metadata['source']}))
 
-        if scores[0] <= float(cutoff_score):
-            return None
+        print(header_texts)
+        print("\n\n")
 
-        for i in range(len(scores) - 1):
 
-            curr = scores[0]
-            next = scores[i + 1]
-            best.append(documents[i])
-            if ((curr - next) / curr) >= 0.05:
-                break
+        vector_db_from_headers_only = self.create_vector_db(documents=header_texts, chroma_path='', persist=False)
 
-        return best
+        header_documents = self.get_k_relevant_documents(vector_db_from_headers_only, query, k=2)
+
+        print(header_documents)
+        print("\n\n")
+
+
+        final_documents = []
+        final_document_headers = [doc.page_content for doc, _score in header_documents]
+        print("Final document headers: ", final_document_headers)
+        print("\n\n")
+
+        for header in [doc.page_content for doc, _score in header_documents]:
+            for document in documents:
+                if document[0].metadata.get('headers') == header:
+                    final_documents.append(document)
+
+        print("After post processing: \n\n", final_documents)
+        print("\n\n\n\n\n\n")
+        print("--------------------------")
+
+        return final_documents
+
+        # if len(final_documents) == 1:
+        #     return final_documents
+        #
+        # scores = [round(_score, 2) for doc, _score in final_documents]
+        # scores.sort(reverse=True)
+        #
+        # best = []
+        #
+        # if scores[0] <= float(cutoff_score):
+        #     return None
+        #
+        # for i in range(len(scores) - 1):
+        #
+        #     curr = scores[0]
+        #     next = scores[i + 1]
+        #     best.append(final_documents[i])
+        #     if ((curr - next) / curr) >= 0.05:
+        #         break
+        #
+        # return best
 
     def increment(self):
 
