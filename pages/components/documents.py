@@ -126,60 +126,62 @@ class DocumentsView(UnicornView):
 
                     title_pattern = r'(?=---\ntitle:)'
 
-                    split_segments = re.split(title_pattern, document[0].page_content)
+                    # Split the .md file by titles
+                    segments = [segment.strip() for segment in re.split(r'(?=---\ntitle:)', document[0].page_content, flags=re.MULTILINE) if segment]
 
                     documents = []
 
-                    for segment in split_segments:
+                    for segment in segments:
 
                         title_pattern = r'(?<=title:\s)(.*?)(?=\n)'
 
-                        title = re.search(title_pattern, segment.strip())[0].strip()
+                        title_matches = re.search(title_pattern, segment)
 
-                        document = Document(page_content=segment.strip(),
-                                            metadata={'source': file_path,
-                                                      'title': title})
+                        title = title_matches[0].strip() if title_matches else ""
 
-                        documents.append(document)
+                        title_paragraph = self.get_first_paragraph_from_text(segment, type='title')
 
+                        split_segments = re.split(r'(?=^##\s)', segment, flags=re.MULTILINE)
 
+                        split_segments = [segment.strip() for segment in split_segments]
 
+                        documents.append(Document(page_content="Document Summary:\n" + title_paragraph + "\n\n" + "Full Document:\n" + split_segments[0], metadata={'source': file_path, 'headers': title}))
 
-                    # If file is markdown, split by markdown headers and combine these into sets of markdown sections
+                        for split_segment in split_segments[1:]:
 
-                    headers_to_split_on = [
-                        ("##", "Header"),
-                    ]
+                            header_paragraph = self.get_first_paragraph_from_text(split_segment, type='header')
 
-                    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on,
-                                                                   strip_headers=False)
+                            split_sub_segments = re.split(r'(?=^###\s)', split_segment, flags=re.MULTILINE)
 
-                    md_header_splits = markdown_splitter.split_text(document[0].page_content)
+                            split_sub_segments = [segment.strip() for segment in split_sub_segments]
 
-                    md_header_splits_batch_size = 1
+                            sub_header_paragraphs = ""
 
-                    documents = []
+                            for split_sub_segment in split_sub_segments:
 
-                    # Regular expression pattern
-                    pattern = r'(?<=##\s).*'
+                                sub_header_paragraphs += self.get_first_paragraph_from_text(split_sub_segment, type='subheader') + "\n"
 
-                    for i in range(0, len(md_header_splits), md_header_splits_batch_size):
+                            pattern = r'(?<=##\s).*'
 
-                        md_header_splits_batch = md_header_splits[i:i + md_header_splits_batch_size]
+                            header_matches = re.finditer(pattern, split_segment)
 
-                        md_header_splits_batch_text_content = '\n\n'.join([md_header_section.page_content for md_header_section in md_header_splits_batch])
+                            headers = "\n".join([header.group() for header in header_matches if header_matches])
 
-                        md_header_splits_batch_header_content = "".join([title+'\n']+[header.strip() for header in re.findall(pattern,  md_header_splits_batch_text_content)])
+                            page_content = "Document Summary:\n" + sub_header_paragraphs[1:]
 
-                        document = Document(page_content=md_header_splits_batch_text_content, metadata={'source': file_path, 'headers': md_header_splits_batch_header_content})
+                            page_content += "\n\n" + "Full Document:\n" + split_segment
 
-                        documents.append(document)
+                            document = Document(page_content=page_content,
+                                                metadata={'source': file_path,
+                                                          'headers': headers})
+
+                            documents.append(document)
 
                 else:
 
                     text_splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=50000,
-                        chunk_overlap=5000,
+                        chunk_size=20000,
+                        chunk_overlap=1000,
                         length_function=len,
                         is_separator_regex=False
                     )
@@ -214,21 +216,40 @@ class DocumentsView(UnicornView):
 
     def split_document(self, document, file_path):
 
+        text = document[0].page_content.split('Full Document:\n')[1]
+
         extension = os.path.splitext(file_path)[1].lstrip('.').lower()
+
+        documents = []
+
+        title_pattern = r'(?<=title:\s)(.*?)(?=\n)'
+
+        title_matches = re.search(title_pattern, text)
+
+        title = title_matches[0].strip() if title_matches else ""
 
         if extension == 'md':
 
-            pattern = r'(?<=###\s).*'
+            split_segments = re.split(r'(?=^###\s)', text, flags=re.MULTILINE)
 
-            headers_to_split_on = [
-                ("###", "Header-2"),
-            ]
+            split_segments = [segment.strip() for segment in split_segments]
 
-            markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on, strip_headers=False)
+            for split_segment in split_segments:
 
-            header_pattern_matches = lambda split: ["\n"] + [header.strip() for header in re.findall(pattern, split.page_content)] if re.findall(pattern, split.page_content) else [""]
+                pattern = r'(?<=###\s).*'
 
-            splits = [Document(page_content=split.page_content, metadata={'source': file_path, 'headers': "".join([document[0].metadata['headers']] + header_pattern_matches(split))}) for split in markdown_splitter.split_text(document[0].page_content)]
+                header_matches = re.finditer(pattern, split_segment)
+
+                headers = "\n".join([header.group() for header in header_matches if header_matches])
+
+                if title:
+                    headers = title
+
+                split = Document(page_content=split_segment,
+                                    metadata={'source': file_path,
+                                              'headers': headers})
+
+                documents.append(split)
 
         else:
 
@@ -239,9 +260,9 @@ class DocumentsView(UnicornView):
                 is_separator_regex=False
             )
 
-            splits = [Document(page_content=split, metadata={'source': file_path}) for split in text_splitter.split_text(document)]
+            documents = [Document(page_content=split, metadata={'source': file_path}) for split in text_splitter.split_text(document)]
 
-        return splits
+        return documents
 
     def create_db(self, directory):
 
@@ -398,8 +419,8 @@ class DocumentsView(UnicornView):
 
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
 
-        # print("Total number of tokens in context: ",
-        #       len(context_text) / 3)  # Each token is approximately 3 characters (from openai documentation)
+        print("Total number of tokens in context: ",
+              len(context_text) / 3)  # Each token is approximately 3 characters (from openai documentation)
 
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
@@ -430,12 +451,12 @@ class DocumentsView(UnicornView):
 
         files = self.get_k_relevant_documents(vector_db_from_all_files, query, k=5)
 
-        relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score, query=query)
+        relevant_files = self.sort_docs_by_relevance_scores(files, self.cutoff_score)
 
         if relevant_files is None:
             self.call('showNoRelevantDataMessage')
         else:
-            # print('Total number of relevant files: ', len(relevant_files))
+            print('Total number of relevant files: ', len(relevant_files))
 
             sources = [doc.metadata.get('source', None) for doc, _score in relevant_files]
 
@@ -449,16 +470,15 @@ class DocumentsView(UnicornView):
 
             vector_db_from_relevant_chunks_only = self.create_vector_db(documents=text_chunks, chroma_path='', persist=False)
 
-            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=4)
+            relevant_text_chunks = self.get_k_relevant_documents(vector_db_from_relevant_chunks_only, query, k=3)
 
-            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score, query=query)
-
+            relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score)
 
             if relevant_text_chunks_based_on_criteria is None:
                 self.call('showNoRelevantDataMessage')
             else:
 
-                # print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
+                print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
 
                 llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
@@ -507,65 +527,27 @@ class DocumentsView(UnicornView):
         self.initialize_directory_data()
 
 
-    def sort_docs_by_relevance_scores(self, documents, cutoff_score, query = None):
+    def sort_docs_by_relevance_scores(self, documents, cutoff_score):
 
-        print("Before post processing: \n\n ", documents)
-        print("\n\n")
+        if len(documents) == 1:
+            return documents
 
-        header_texts = []
+        scores = [round(_score, 2) for doc, _score in documents]
 
-        for document in documents:
-            if 'headers' in document[0].metadata:
-                header_texts.append(Document(page_content=document[0].metadata['headers'], metadata={'source': document[0].metadata['source']}))
+        best = []
 
-        print(header_texts)
-        print("\n\n")
+        if scores[0] <= float(cutoff_score):
+            return None
 
+        for i in range(len(scores) - 1):
 
-        vector_db_from_headers_only = self.create_vector_db(documents=header_texts, chroma_path='', persist=False)
+            curr = scores[0]
+            next = scores[i + 1]
+            best.append(documents[i])
+            if ((curr - next) / curr) >= 0.10:
+                break
 
-        header_documents = self.get_k_relevant_documents(vector_db_from_headers_only, query, k=2)
-
-        print(header_documents)
-        print("\n\n")
-
-
-        final_documents = []
-        final_document_headers = [doc.page_content for doc, _score in header_documents]
-        print("Final document headers: ", final_document_headers)
-        print("\n\n")
-
-        for header in [doc.page_content for doc, _score in header_documents]:
-            for document in documents:
-                if document[0].metadata.get('headers') == header:
-                    final_documents.append(document)
-
-        print("After post processing: \n\n", final_documents)
-        print("\n\n\n\n\n\n")
-        print("--------------------------")
-
-        return final_documents
-
-        # if len(final_documents) == 1:
-        #     return final_documents
-        #
-        # scores = [round(_score, 2) for doc, _score in final_documents]
-        # scores.sort(reverse=True)
-        #
-        # best = []
-        #
-        # if scores[0] <= float(cutoff_score):
-        #     return None
-        #
-        # for i in range(len(scores) - 1):
-        #
-        #     curr = scores[0]
-        #     next = scores[i + 1]
-        #     best.append(final_documents[i])
-        #     if ((curr - next) / curr) >= 0.05:
-        #         break
-        #
-        # return best
+        return best
 
     def increment(self):
 
@@ -606,3 +588,18 @@ class DocumentsView(UnicornView):
                 directory_files_status[str(file.file)] = file.processed
             print(directory_files_status)
             self.call('expand', directory_id, json.dumps(directory_structure), json.dumps(directory_files_status))
+
+
+    def get_first_paragraph_from_text(self, text, type):
+
+        text = "\n".join([line for line in text.strip().split('\n') if line][:3])
+
+        if type == 'title':
+
+            text = text.split('##')[0].split('###')[0]
+
+        elif type == 'header':
+
+            text = text.split('###')[0]
+
+        return text
