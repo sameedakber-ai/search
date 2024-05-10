@@ -124,9 +124,6 @@ class DocumentsView(UnicornView):
 
                 if extension == 'md':
 
-                    title_pattern = r'(?=---\ntitle:)'
-
-                    # Split the .md file by titles
                     segments = [segment.strip() for segment in re.split(r'(?=---\ntitle:)', document[0].page_content, flags=re.MULTILINE) if segment]
 
                     documents = []
@@ -139,43 +136,43 @@ class DocumentsView(UnicornView):
 
                         title = title_matches[0].strip() if title_matches else ""
 
-                        title_paragraph = self.get_first_paragraph_from_text(segment, type='title')
+                        title_summary = self.get_first_paragraph_from_text(segment, type='title')
 
                         split_segments = re.split(r'(?=^##\s)', segment, flags=re.MULTILINE)
 
                         split_segments = [segment.strip() for segment in split_segments]
 
-                        documents.append(Document(page_content="Document Summary:\n" + title_paragraph + "\n\n" + "Full Document:\n" + split_segments[0], metadata={'source': file_path, 'headers': title}))
+                        documents.append(Document(page_content="Document Summary:\n" + title_summary + "\n\n" + "Full Document:\n" + split_segments[0], metadata={'source': file_path, 'headers': title}))
 
-                        for split_segment in split_segments[1:]:
+                        if len(split_segments) > 1:
 
-                            header_paragraph = self.get_first_paragraph_from_text(split_segment, type='header')
+                            for split_segment in split_segments[1:]:
 
-                            split_sub_segments = re.split(r'(?=^###\s)', split_segment, flags=re.MULTILINE)
+                                split_sub_segments = re.split(r'(?=^###\s)', split_segment, flags=re.MULTILINE)
 
-                            split_sub_segments = [segment.strip() for segment in split_sub_segments]
+                                split_sub_segments = [segment.strip() for segment in split_sub_segments]
 
-                            sub_header_paragraphs = ""
+                                header_summary = ""
 
-                            for split_sub_segment in split_sub_segments:
+                                for split_sub_segment in split_sub_segments:
 
-                                sub_header_paragraphs += self.get_first_paragraph_from_text(split_sub_segment, type='subheader') + "\n"
+                                    header_summary += self.get_first_paragraph_from_text(split_sub_segment, type='subheader') + "\n"
 
-                            pattern = r'(?<=##\s).*'
+                                pattern = r'(?<=##\s).*'
 
-                            header_matches = re.finditer(pattern, split_segment)
+                                header_matches = re.finditer(pattern, split_segment)
 
-                            headers = "\n".join([header.group() for header in header_matches if header_matches])
+                                headers = "\n".join([header.group() for header in header_matches if header_matches])
 
-                            page_content = "Document Summary:\n" + sub_header_paragraphs[1:]
+                                page_content = "Document Summary:\n" + header_summary[1:]
 
-                            page_content += "\n\n" + "Full Document:\n" + split_segment
+                                page_content += "\n\n" + "Full Document:\n" + split_segment
 
-                            document = Document(page_content=page_content,
-                                                metadata={'source': file_path,
-                                                          'headers': headers})
+                                document = Document(page_content=page_content,
+                                                    metadata={'source': file_path,
+                                                              'headers': headers})
 
-                            documents.append(document)
+                                documents.append(document)
 
                 else:
 
@@ -186,7 +183,7 @@ class DocumentsView(UnicornView):
                         is_separator_regex=False
                     )
 
-                    documents = [Document(page_content=split, metadata={'source': file_path}) for split in text_splitter.split_text(document[0].page_content)]
+                    documents = [Document(page_content=split, metadata={'source': file_path, 'headers': ''}) for split in text_splitter.split_text(document[0].page_content)]
 
         return documents
 
@@ -260,7 +257,7 @@ class DocumentsView(UnicornView):
                 is_separator_regex=False
             )
 
-            documents = [Document(page_content=split, metadata={'source': file_path}) for split in text_splitter.split_text(document)]
+            documents = [Document(page_content=split, metadata={'source': file_path, 'headers': ''}) for split in text_splitter.split_text(document)]
 
         return documents
 
