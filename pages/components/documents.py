@@ -475,10 +475,18 @@ class DocumentsView(UnicornView):
             relevant_text_chunks_based_on_criteria = self.sort_docs_by_relevance_scores(relevant_text_chunks, self.cutoff_score)
 
             if relevant_text_chunks_based_on_criteria is None:
+
                 self.call('showNoRelevantDataMessage')
+
             else:
 
                 print("Total number of relevant chunks: ", len(relevant_text_chunks_based_on_criteria))
+
+                print("\nRelevant chunk headers:")
+
+                for relevant_text_chunk_based_on_criteria in relevant_text_chunks_based_on_criteria:
+
+                    print(relevant_text_chunk_based_on_criteria[0].metadata['headers'])
 
                 llm_response = self.get_llm_response(query, relevant_text_chunks_based_on_criteria)
 
